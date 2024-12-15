@@ -55,7 +55,7 @@ ROOT_URLCONF = 'coffee_payment.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -149,5 +149,9 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'qr_code_redirect': {
+            'handlers': ['file'],
+            'propagate': True,
+        }
     },
 }
