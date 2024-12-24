@@ -17,5 +17,6 @@ def validate_merchant(device):
     return merchant
 
 def get_redirect_url(device, query_params):
+    #TODO: изменить хост у дефолтного урла
     redirect_url = device.redirect_url if hasattr(device, 'redirect_url') and device.redirect_url else "https://default-url.experttm.ru/v1/tbank-pay"
     return f"{redirect_url}?{query_params}"

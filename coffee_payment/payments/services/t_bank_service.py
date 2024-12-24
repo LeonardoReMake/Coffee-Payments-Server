@@ -11,6 +11,9 @@ def generate_token(data):
     """
     Формирует токен для запроса к API Т-Банка.
     """
+
+    #TODO: Проверить генерацию токена
+    
     # Исключаем поля 'Shops' и 'Receipt' из данных
     filtered_data = {key: value for key, value in data.items() if key not in ['Shops', 'Receipt']}
     
