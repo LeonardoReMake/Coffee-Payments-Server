@@ -127,6 +127,16 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Т-Банк API конфигурация
+SHOP_ID = '<ShopID>'
+SECRET_KEY = '<Secret Key>'
+SUCCESS_URL = '<Successful URL>'
+FAIL_URL = '<Unsuccessful URL>'
+T_BANK_BASE_URL = 'https://securepay.tinkoff.ru'
+
+# Телеметрия API конфигурация
+TELEMETRY_API_TOKEN = ''
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

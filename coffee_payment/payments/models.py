@@ -124,3 +124,16 @@ class Receipt(models.Model):
 
     def __str__(self):
         return f"Receipt {self.id}"
+
+
+class TBankPayment(models.Model):
+    order_id = models.CharField(max_length=255, unique=True)
+    payment_id = models.CharField(max_length=20, unique=True)
+    amount = models.PositiveIntegerField()  # В копейках
+    payment_url = models.URLField(null=True, blank=True)
+    status = models.CharField(max_length=50, choices=[('new', 'New'), ('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')], default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Payment {self.order_id} - {self.status}"

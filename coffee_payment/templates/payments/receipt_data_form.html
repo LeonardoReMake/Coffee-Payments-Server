@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Данные для чека</title>
+    <script>
+        function validateForm() {
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const submitButton = document.getElementById('submit-button');
+            submitButton.disabled = !(email || phone);
+        }
+    </script>
+</head>
+<body>
+    <h1>Данные для чека</h1>
+    <p>Название напитка: {{ drink_name }}</p>
+    <p>Цена напитка: {{ drink_price|floatformat:2 }} руб.</p>
+    <p>Размер напитка: {{ drink_size }}</p>
+    <p>Название компании: {{ company_name }}</p>
+    <p>Введите email или номер телефона для отправки чека:</p>
+    <form method="post" action="{% url 'v1/process_payment' %}">
+        {% csrf_token %}
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" oninput="validateForm()">
+        <br>
+        <label for="phone">Номер телефона:</label>
+        <input type="tel" id="phone" name="phone" oninput="validateForm()">
+        <br>
+        <button type="submit" id="submit-button" disabled>Оплатить</button>
+    </form>
+</body>
+</html>
