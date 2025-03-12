@@ -53,9 +53,8 @@ class Drink(models.Model):
 
 class Order(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    drink = models.ForeignKey(
-        Drink, on_delete=models.CASCADE, related_name="orders"
-    )  # Связь с Drink
+    external_order_id = models.CharField(max_length=255, null=True, blank=True)  # New field for external order ID
+    drink_name = models.CharField(max_length=255)  # Replace ForeignKey with CharField for drink name
     device = models.ForeignKey(
         Device, on_delete=models.CASCADE, related_name="orders"
     )  # Связь с Device
@@ -63,12 +62,12 @@ class Order(models.Model):
         Merchant, on_delete=models.CASCADE, related_name="orders"
     )  # Связь с Merchant
     size = models.IntegerField(choices=[(1, 'Small'), (2, 'Medium'), (3, 'Large')])
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2) # в копейках
     status = models.CharField(max_length=50, choices=[
         ('created', 'Created'),
-        ('paid', 'Paid'),
-        ('prepared', 'Prepared'),
-        ('failed', 'Failed')
+        ('pending', 'Pending'),
+        ('failed', 'Failed'),
+        ('success', 'Success'),
     ])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

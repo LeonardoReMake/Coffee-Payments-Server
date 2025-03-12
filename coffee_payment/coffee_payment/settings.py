@@ -25,7 +25,11 @@ SECRET_KEY = 'django-insecure-)8hc120s$c)^11n^fl==uogtt9e(qlu^(vc8u%hfy_67to6ox%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '2177-147-45-255-118.ngrok-free.app' # Для тестирования
+]
 
 
 # Application definition
@@ -160,6 +164,14 @@ LOGGING = {
             'propagate': True,
         },
         'qr_code_redirect': {
+            'handlers': ['file'],
+            'propagate': True,
+        },
+        'yookassa_payment_result_webhook': {
+            'handlers': ['file'],
+            'propagate': True,
+        },
+        'yookassa_payment_process': {
             'handlers': ['file'],
             'propagate': True,
         }
