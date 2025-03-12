@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from payments.models import Device
 from payments.services.qr_code_service import validate_device, validate_merchant, get_redirect_url
 from payments.utils.logging import log_error, log_info
-from services.telemetry_service import get_drink_price
+from payments.services.telemetry_service import get_drink_price
 from django.views.decorators.csrf import csrf_exempt
 
 def qr_code_redirect(request):
