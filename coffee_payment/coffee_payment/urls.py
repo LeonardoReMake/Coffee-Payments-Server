@@ -16,9 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from payments.views import qr_code_redirect
+from payments.views import qr_code_redirect, process_payment
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('v1/pay', qr_code_redirect, name='qr_code_redirect'),
+    path('v1/tbank-pay', qr_code_redirect, name='qr_code_redirect'),
+    path('v1/process_payment/', process_payment, name='process_payment'),
 ]
