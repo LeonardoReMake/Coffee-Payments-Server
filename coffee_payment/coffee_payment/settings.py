@@ -25,7 +25,11 @@ SECRET_KEY = 'django-insecure-)8hc120s$c)^11n^fl==uogtt9e(qlu^(vc8u%hfy_67to6ox%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '2177-147-45-255-118.ngrok-free.app' # Для тестирования
+]
 
 
 # Application definition
@@ -127,6 +131,16 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Т-Банк API конфигурация
+SHOP_ID = '<ShopID>'
+SECRET_KEY = '<Secret Key>'
+SUCCESS_URL = '<Successful URL>'
+FAIL_URL = '<Unsuccessful URL>'
+T_BANK_BASE_URL = 'https://securepay.tinkoff.ru'
+
+# Телеметрия API конфигурация
+TELEMETRY_API_TOKEN = ''
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -150,6 +164,14 @@ LOGGING = {
             'propagate': True,
         },
         'qr_code_redirect': {
+            'handlers': ['file'],
+            'propagate': True,
+        },
+        'yookassa_payment_result_webhook': {
+            'handlers': ['file'],
+            'propagate': True,
+        },
+        'yookassa_payment_process': {
             'handlers': ['file'],
             'propagate': True,
         }
