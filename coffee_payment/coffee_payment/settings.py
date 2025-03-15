@@ -29,7 +29,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '2177-147-45-255-118.ngrok-free.app' # Для тестирования
+    '2177-147-45-255-118.ngrok-free.app', # Для тестирования
+    'tmetr-pay.duckdns.org', # Для тестирования
 ]
 
 
