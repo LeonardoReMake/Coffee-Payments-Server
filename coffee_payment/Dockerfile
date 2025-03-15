@@ -17,8 +17,15 @@ COPY . /app
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+# Копируем и делаем entrypoint.sh исполняемым
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Открываем порт для приложения
 EXPOSE 8080
+
+# Устанавливаем точку входа
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Запускаем сервер Django
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8080"]

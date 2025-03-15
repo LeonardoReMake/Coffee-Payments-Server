@@ -27,6 +27,9 @@ services:
       - DB_PASSWORD=nfk3m51dst
       - DB_HOST=db
       - DB_PORT=5432
+      - DJANGO_SUPERUSER_USERNAME=admin
+      - DJANGO_SUPERUSER_PASSWORD=admin
+      - DJANGO_SUPERUSER_EMAIL=admin@emailme.ru
 
 volumes:
   postgres_data:
