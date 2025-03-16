@@ -20,13 +20,6 @@ def on_connect(client, userdata, flags, rc):
         log_error(f'Failed to connect to MQTT broker, return code {rc}', 'mqtt_connect')
         print(f'Failed to connect to MQTT broker, return code {rc}')
 
-
-# MQTT client setup
-mqtt_client = mqtt.Client()
-mqtt_client.on_publish = on_publish 
-mqtt_client.on_connect = on_connect
-mqtt_client.connect(MQTT_HOST, MQTT_PORT, 60)
-
 crc8_tab = [
     0, 94, 188, 226, 97, 63, 221, 131, 194, 156, 126, 32, 163, 253, 31, 65, 157, 195, 33,
     127, 252, 162, 64, 30, 95, 1, 227, 189, 62, 96, 130, 220, 35, 125, 159, 193, 66, 28, 254,
@@ -89,6 +82,12 @@ def generate_mqtt_payload(order_json):
     return create_message(header, version, msg_body, tail, protocol_command)
 
 def send_cmd_make_drink(order_uuid, drink_uuid, size, price):
+    # MQTT client setup
+    mqtt_client = mqtt.Client()
+    mqtt_client.on_publish = on_publish 
+    mqtt_client.on_connect = on_connect
+    mqtt_client.connect(MQTT_HOST, MQTT_PORT, 60)
+    
     log_info('Generating payload', 'yookassa_payment_result_webhook')
     json_payload = generate_json_payload(order_uuid, drink_uuid, size, price)
     log_info(f'Payload: {str(json_payload)}', 'yookassa_payment_result_webhook')
