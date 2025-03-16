@@ -8,7 +8,7 @@ from payments.utils.logging import log_error, log_info
 from payments.services.telemetry_service import get_drink_price
 from payments.services.yookassa_service import create_payment
 from django.views.decorators.csrf import csrf_exempt
-from yookassa.domain.notification import WebhookNotification
+from payments.services.cm_mqtt import send_cmd_make_drink
 
 def qr_code_redirect(request):
     device_uuid = request.GET.get('deviceUUID')
@@ -154,6 +154,8 @@ def yookassa_payment_result_webhook(request):
     device = order.device
     log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}", 'yookassa_payment_result_webhook')
     print(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}")
+
+    send_cmd_make_drink(order_uuid, drink_number, drink_size, order.price)
 
     return HttpResponse(status=200)
 
