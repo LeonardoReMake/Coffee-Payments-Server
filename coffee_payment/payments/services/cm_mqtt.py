@@ -1,12 +1,30 @@
 import paho.mqtt.client as mqtt
 import struct
 import json
+from payments.utils.logging import log_error, log_info
 
 MQTT_HOST = 'mqtt-proxy'
 MQTT_PORT = 1883
 
+# Обратный вызов для обработки подтверждений публикации сообщений
+def on_publish(client, userdata, mid):
+    log_info(f'Message {mid} published successfully', 'mqtt_publish')
+    print(f'Message {mid} published successfully')
+
+# Обратный вызов для обработки успешного подключения
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        log_info('Connected to MQTT broker successfully', 'mqtt_connect')
+        print('Connected to MQTT broker successfully')
+    else:
+        log_error(f'Failed to connect to MQTT broker, return code {rc}', 'mqtt_connect')
+        print(f'Failed to connect to MQTT broker, return code {rc}')
+
+
 # MQTT client setup
 mqtt_client = mqtt.Client()
+mqtt_client.on_publish = on_publish 
+mqtt_client.on_connect = on_connect
 mqtt_client.connect(MQTT_HOST, MQTT_PORT, 60)
 
 crc8_tab = [
@@ -71,10 +89,12 @@ def generate_mqtt_payload(order_json):
     return create_message(header, version, msg_body, tail, protocol_command)
 
 def send_cmd_make_drink(order_uuid, drink_uuid, size, price):
+    log_info('Generating payload', 'yookassa_payment_result_webhook')
     json_payload = generate_json_payload(order_uuid, drink_uuid, size, price)
-    print('Json: ' + str(json_payload))
+    log_info(f'Payload: {str(json_payload)}', 'yookassa_payment_result_webhook')
     payload = generate_mqtt_payload(json_payload)
     print('Sending payload: ' + str(payload))
+    log_info(f'Payload: {str(payload)}', 'yookassa_payment_result_webhook')
     mqtt_client.publish("technical", payload)
 
     return "Payment Successful, order has been sent to MQTT broker.", 200
