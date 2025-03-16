@@ -33,11 +33,11 @@ services:
 
   mqtt-proxy:
     build:
-      context: ../../mqtt-proxy
+      context: ../../mqtt-proxy/mqtt_proxy
     ports:
       - "1883:1883"
     volumes:
-      - ../../mqtt-proxy:/app
+      - ../../mqtt-proxy/mqtt_proxy:/app
     environment:
       - NODE_ENV=production
 
