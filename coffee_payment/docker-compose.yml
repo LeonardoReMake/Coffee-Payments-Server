@@ -31,5 +31,15 @@ services:
       - DJANGO_SUPERUSER_PASSWORD=admin
       - DJANGO_SUPERUSER_EMAIL=admin@emailme.ru
 
+  mqtt-proxy:
+    build:
+      context: ../../mqtt_proxy
+    ports:
+      - "1883:1883"
+    volumes:
+      - ../../mqtt_proxy:/app
+    environment:
+      - NODE_ENV=production
+
 volumes:
   postgres_data:

@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 import struct
 import json
 
-MQTT_HOST = '0.0.0.0'
+MQTT_HOST = 'mqtt-proxy'
 MQTT_PORT = 1883
 
 # MQTT client setup
