@@ -124,6 +124,7 @@ def yookassa_payment_process(request):
 
 @csrf_exempt
 def yookassa_payment_result_webhook(request):
+    log_info('Processing Yookassa webhook', 'django')
     log_info('Processing Yookassa webhook', 'yookassa_payment_result_webhook')
     event_json = json.loads(request.body)
 
@@ -139,9 +140,9 @@ def yookassa_payment_result_webhook(request):
             order.status = 'success'
             order.save()
             
-            log_info(f"Order {order.id} status updated to success", 'yookassa_payment_result_webhook')
+            log_info(f"Order {order.id} status updated to success", 'django')
         except Order.DoesNotExist:
-            log_error(f"Order with external_order_id {payment_id} not found", 'yookassa_payment_result_webhook', 'ERROR')
+            log_error(f"Order with external_order_id {payment_id} not found", 'django', 'ERROR')
             return HttpResponse(status=404)
         except Exception as e:
             log_error(f"Error updating order status: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
@@ -152,7 +153,7 @@ def yookassa_payment_result_webhook(request):
     order_uuid = event_json['object']['metadata']['order_uuid']
     drink_size = event_json['object']['metadata']['size']
     device = order.device
-    log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}", 'yookassa_payment_result_webhook')
+    log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}", 'django')
     print(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}")
 
     send_cmd_make_drink(order_uuid, drink_number, drink_size, order.price)
