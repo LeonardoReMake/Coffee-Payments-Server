@@ -8,16 +8,16 @@ MQTT_PORT = 1883
 
 # Обратный вызов для обработки подтверждений публикации сообщений
 def on_publish(client, userdata, mid):
-    log_info(f'Message {mid} published successfully', 'mqtt_publish')
+    log_info(f'Message {mid} published successfully', 'yookassa_payment_result_webhook')
     print(f'Message {mid} published successfully')
 
 # Обратный вызов для обработки успешного подключения
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        log_info('Connected to MQTT broker successfully', 'mqtt_connect')
+        log_info('Connected to MQTT broker successfully', 'yookassa_payment_result_webhook')
         print('Connected to MQTT broker successfully')
     else:
-        log_error(f'Failed to connect to MQTT broker, return code {rc}', 'mqtt_connect')
+        log_error(f'Failed to connect to MQTT broker, return code {rc}', 'yookassa_payment_result_webhook')
         print(f'Failed to connect to MQTT broker, return code {rc}')
 
 crc8_tab = [
