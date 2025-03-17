@@ -9,6 +9,8 @@ services:
       POSTGRES_DB: coffee_payment
       POSTGRES_USER: leonid
       POSTGRES_PASSWORD: nfk3m51dst
+    networks:
+      - cofpay_network
 
   web:
     build: .
@@ -30,16 +32,12 @@ services:
       - DJANGO_SUPERUSER_USERNAME=admin
       - DJANGO_SUPERUSER_PASSWORD=admin
       - DJANGO_SUPERUSER_EMAIL=admin@emailme.ru
-
-  mqtt-proxy:
-    build:
-      context: ../../mqtt-proxy/mqtt_proxy
-    ports:
-      - "1883:1883"
-    volumes:
-      - ../../mqtt-proxy/mqtt_proxy:/app
-    environment:
-      - NODE_ENV=production
+    networks:
+      - cofpay_network
 
 volumes:
   postgres_data:
+
+networks:
+  cofpay_network:
+    external: true
