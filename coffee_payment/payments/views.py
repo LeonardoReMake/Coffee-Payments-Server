@@ -10,8 +10,9 @@ from payments.services.yookassa_service import create_payment
 from django.views.decorators.csrf import csrf_exempt
 from payments.services.cm_mqtt import send_cmd_make_drink
 
+# Example: GET /v1/pay?deviceUuid=test&drinkNo=9b900a2e63042d350f45b6675ef26ced&size=1&random=waxoqk&ts=1742198482&salt=b6c2cca0340a82d0dc843243299800d7&drinkName=Молочная пена&uuid=20250317110122659ba6d7-9ace-cndn
 def qr_code_redirect(request):
-    device_uuid = request.GET.get('deviceUUID')
+    device_uuid = request.GET.get('deviceUuid')
 
     if not device_uuid:
         log_error('Missing deviceUUID parameter', 'qr_code_redirect', 'ERROR')
@@ -76,14 +77,15 @@ def tbank_payment_proccessign(request):
         return render_error_page('Device not found', 404)
 
 
-# GET /v1/yook-pay?deviceUUID=test&drinkName=americano&size=1&price=10100&drinkNo=cmdrinkid&orderUUID=cmorderuuid
+# GET /v1/yook-pay?deviceUuid=test&drinkName=americano&size=1&price=10100&drinkNo=cmdrinkid&uuid=[orderUUID]
 @csrf_exempt
 def yookassa_payment_process(request):
-    drink_price = int(request.GET.get('price'))
+    drink_price = int(5000) # фиксированная цена 50 рублей
     drink_name = request.GET.get('drinkName')
     drink_number = request.GET.get('drinkNo')
-    order_uuid = request.GET.get('orderUUID')
+    order_uuid = request.GET.get('uuid')
     drink_size = request.GET.get('size')
+    device_uuid = request.GET.get('deviceUuid')
 
     log_info(f"Starting yookassa process", 'yookassa_payment_process')
     payment = create_payment(drink_price/100, f'Оплата напитка: {drink_name}', "https://google.com", drink_number, order_uuid, drink_size)
@@ -100,7 +102,7 @@ def yookassa_payment_process(request):
         'canceled': 'failed',
     }
     status = status_mapping.get(payment_status, 'failed')
-    device = get_object_or_404(Device, device_uuid=request.GET.get('deviceUUID'))
+    device = get_object_or_404(Device, device_uuid=device_uuid)
     merchant = device.merchant
     size_mapping = {
         '0': 1,
