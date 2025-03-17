@@ -95,9 +95,9 @@ def send_cmd_make_drink(order_uuid, drink_uuid, size, price):
     payload = generate_mqtt_payload(json_payload)
     print('Sending payload: ' + str(payload))
     log_info(f'Payload: {str(payload)}', 'yookassa_payment_result_webhook')
-    res = mqtt_client.publish("technical", payload)
-    if res != mqtt.MQTT_ERR_SUCCESS:
-        log_info(f'Error while sending message', 'yookassa_payment_result_webhook')
+    # res = mqtt_client.publish("technical", payload)
+    # if res != mqtt.MQTT_ERR_SUCCESS:
+    #     log_info(f'Error while sending message', 'yookassa_payment_result_webhook')
     
     publish.single(hostname=MQTT_HOST, port=MQTT_PORT, topic="technical", payload=payload, keepalive=1)
 
