@@ -31,7 +31,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '2177-147-45-255-118.ngrok-free.app', # Для тестирования
     'tmetr-pay.duckdns.org', # Для тестирования
-    'https://pay.tmetr.ru'
+    'pay.tmetr.ru'
 ]
 
 # Добавьте ваш домен в список доверенных источников CSRF
