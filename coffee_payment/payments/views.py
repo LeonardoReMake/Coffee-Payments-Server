@@ -92,9 +92,9 @@ def yookassa_payment_process(request):
     # TODO: получить цену напитка /api/ui/v1/static/drink
     tmetr_service = TmetrService()
     drink_size_dict = {
-        '1': 'SMALL',
-        '2': 'MEDIUM',
-        '3': 'BIG'
+        '0': 'SMALL',
+        '1': 'MEDIUM',
+        '2': 'BIG'
     }
     drink_details = None
     try:
@@ -113,7 +113,7 @@ def yookassa_payment_process(request):
     # Correct way to check dictionary key and value
     drink_price = drink_details.get('price', 5000) if drink_details is not None else 5000
     if drink_price == 0:
-        drink_price = 50
+        drink_price = 5000
     log_info(f"Current price for drink {drink_price}", 'yookassa_payment_process')
     
     log_info(f"Starting yookassa process", 'yookassa_payment_process')
