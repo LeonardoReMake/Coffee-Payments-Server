@@ -183,21 +183,25 @@ def yookassa_payment_result_webhook(request):
     drink_number = event_json['object']['metadata']['drink_number']
     order_uuid = event_json['object']['metadata']['order_uuid']
     drink_size = event_json['object']['metadata']['size']
-    drink_size = event_json['object']['metadata']['size']
     drink_price_str = event_json['object']['amount']['value']
     drink_price = int(float(drink_price_str)*100)
     device = order.device
-    log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size}, price kop {drink_price},  deviceUUID: {device.device_uuid}", 'django')
-    # print(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}")
 
-    # send_cmd_make_drink(order_uuid, drink_number, drink_size, order.price)
+    drink_size_dict = {
+        '0': 'SMALL',
+        '1': 'MEDIUM',
+        '2': 'BIG'
+    }
+
+    log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size_dict[drink_size]}, price kop {drink_price},  deviceUUID: {device.device_uuid}", 'django')
+
     tmetr_service = TmetrService()
     try:
         tmetr_service.send_make_command(
             device_id=device.device_uuid, 
             order_uuid=order_uuid, 
             drink_uuid=drink_number, 
-            size=drink_size, 
+            size=drink_size_dict[drink_size], 
             price=drink_price
             )
     except requests.RequestException as e:
