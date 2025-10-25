@@ -1,4 +1,5 @@
 import json
+import requests
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
@@ -9,6 +10,7 @@ from payments.services.telemetry_service import get_drink_price
 from payments.services.yookassa_service import create_payment
 from django.views.decorators.csrf import csrf_exempt
 from payments.services.cm_mqtt import send_cmd_make_drink
+from payments.services.tmetr_service import TmetrService
 
 # Example: GET /v1/pay?deviceUuid=test&drinkNo=9b900a2e63042d350f45b6675ef26ced&size=1&random=waxoqk&ts=1742198482&salt=b6c2cca0340a82d0dc843243299800d7&drinkName=Молочная пена&uuid=20250317110122659ba6d7-9ace-cndn
 def qr_code_redirect(request):
@@ -87,6 +89,33 @@ def yookassa_payment_process(request):
     drink_size = request.GET.get('size')
     device_uuid = request.GET.get('deviceUuid')
 
+    # TODO: получить цену напитка /api/ui/v1/static/drink
+    tmetr_service = TmetrService()
+    drink_size_dict = {
+        '1': 'SMALL',
+        '2': 'MEDIUM',
+        '3': 'BIG'
+    }
+    drink_details = None
+    try:
+        drink_details = tmetr_service.send_static_drink(
+            device_id=device_uuid, 
+            drink_id_at_device=drink_number, 
+            drink_size=drink_size_dict[drink_size]
+        )
+    except requests.RequestException as e:
+        log_error(f'API request failed: {str(e)}', 'yookassa_payment_process', 'ERROR')
+        return render_error_page('Service temporarily unavailable', 503)
+    except Exception as e:
+        log_error(f'Error while getting drink information: {str(e)}', 'yookassa_payment_process', 'ERROR')
+        return render_error_page('Device not found', 404)
+
+    # Correct way to check dictionary key and value
+    drink_price = drink_details.get('price', 5000) if drink_details is not None else 5000
+    if drink_price == 0:
+        drink_price = 50
+    log_info(f"Current price for drink {drink_price}", 'yookassa_payment_process')
+    
     log_info(f"Starting yookassa process", 'yookassa_payment_process')
     payment = create_payment(drink_price/100, f'Оплата напитка: {drink_name}', "https://google.com", drink_number, order_uuid, drink_size)
     payment_data = json.loads(payment.json())
@@ -159,6 +188,21 @@ def yookassa_payment_result_webhook(request):
     print(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}")
 
     # send_cmd_make_drink(order_uuid, drink_number, drink_size, order.price)
+    tmetr_service = TmetrService()
+    try:
+        tmetr_service.send_make_command(
+            device_id=device.device_uuid, 
+            order_uuid=order_uuid, 
+            drink_uuid=drink_number, 
+            size=drink_size, 
+            price=order.price
+            )
+    except requests.RequestException as e:
+        log_error(f'API request failed: {str(e)}', 'yookassa_payment_result_webhook', 'ERROR')
+        return render_error_page('Service temporarily unavailable', 503)
+    except Exception as e:
+        log_error(f'Error while sending make drink command: {str(e)}', 'yookassa_payment_result_webhook', 'ERROR')
+        return render_error_page('Device not found', 404)
 
     return HttpResponse(status=200)
 
