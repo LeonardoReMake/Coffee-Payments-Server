@@ -38,7 +38,7 @@ class TmetrService:
         return response.json()
 
     def send_make_command(self, device_id: str, order_uuid: str, drink_uuid: str, 
-                         size: str, price: float) -> Dict[str, Any]:
+                         size: str, price: int) -> Dict[str, Any]:
         """
         Send make command to Tmetr API
         
