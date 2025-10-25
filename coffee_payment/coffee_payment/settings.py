@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,9 +29,17 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '2177-147-45-255-118.ngrok-free.app' # Для тестирования
+    '2177-147-45-255-118.ngrok-free.app', # Для тестирования
+    'tmetr-pay.duckdns.org', # Для тестирования
+    'pay.tmetr.ru'
 ]
 
+# Добавьте ваш домен в список доверенных источников CSRF
+CSRF_TRUSTED_ORIGINS = [
+    'https://2177-147-45-255-118.ngrok-free.app',
+    'https://tmetr-pay.duckdns.org',
+    'https://pay.tmetr.ru'
+]
 
 # Application definition
 
@@ -81,11 +90,11 @@ WSGI_APPLICATION = 'coffee_payment.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'coffee_db',
-        'USER': 'coffee_user',
-        'PASSWORD': 'qwerty12345',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 
@@ -165,14 +174,17 @@ LOGGING = {
         },
         'qr_code_redirect': {
             'handlers': ['file'],
+            'level': 'DEBUG',
             'propagate': True,
         },
         'yookassa_payment_result_webhook': {
             'handlers': ['file'],
+            'level': 'DEBUG',
             'propagate': True,
         },
         'yookassa_payment_process': {
             'handlers': ['file'],
+            'level': 'DEBUG',
             'propagate': True,
         }
     },

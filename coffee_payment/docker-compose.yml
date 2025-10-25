@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: coffee_payment
+      POSTGRES_USER: leonid
+      POSTGRES_PASSWORD: nfk3m51dst
+    networks:
+      - cofpay_network
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8080
+    volumes:
+      - .:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=klkgm3n3ktjn23kl9456n2l35
+      - DB_NAME=coffee_payment
+      - DB_USER=leonid
+      - DB_PASSWORD=nfk3m51dst
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DJANGO_SUPERUSER_USERNAME=admin
+      - DJANGO_SUPERUSER_PASSWORD=admin
+      - DJANGO_SUPERUSER_EMAIL=admin@emailme.ru
+    networks:
+      - cofpay_network
+
+volumes:
+  postgres_data:
+
+networks:
+  cofpay_network:
+    external: true
