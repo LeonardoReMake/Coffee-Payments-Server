@@ -183,9 +183,12 @@ def yookassa_payment_result_webhook(request):
     drink_number = event_json['object']['metadata']['drink_number']
     order_uuid = event_json['object']['metadata']['order_uuid']
     drink_size = event_json['object']['metadata']['size']
+    drink_size = event_json['object']['metadata']['size']
+    drink_price_str = event_json['object']['amount']['value']
+    drink_price = int(float(drink_price_str)*100)
     device = order.device
-    log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}", 'django')
-    print(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}")
+    log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size}, price kop {drink_price},  deviceUUID: {device.device_uuid}", 'django')
+    # print(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}")
 
     # send_cmd_make_drink(order_uuid, drink_number, drink_size, order.price)
     tmetr_service = TmetrService()
@@ -195,7 +198,7 @@ def yookassa_payment_result_webhook(request):
             order_uuid=order_uuid, 
             drink_uuid=drink_number, 
             size=drink_size, 
-            price=order.price
+            price=drink_price
             )
     except requests.RequestException as e:
         log_error(f'API request failed: {str(e)}', 'yookassa_payment_result_webhook', 'ERROR')
