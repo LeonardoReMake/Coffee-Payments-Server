@@ -1,8 +1,8 @@
 from yookassa import Configuration, Payment
 # import var_dump as var_dump
 
-Configuration.account_id = '1048794'
-Configuration.secret_key = 'test_BAa7hU7OeqiowcSnvVtSBCURBE5tZjh6gmChqaGuBk0'
+Configuration.account_id = '1193510'
+Configuration.secret_key = 'test_Ku1e9ZkX5OoTCm0k2m05Dg66XldJFHkER_9sw5LKE1E'
 
 def create_payment(amount, description, return_url, drink_no, order_uuid, size):
     payment = Payment.create(

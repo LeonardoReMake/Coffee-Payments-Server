@@ -158,7 +158,7 @@ def yookassa_payment_result_webhook(request):
     log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}", 'django')
     print(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size},  deviceUUID: {device.device_uuid}")
 
-    send_cmd_make_drink(order_uuid, drink_number, drink_size, order.price)
+    # send_cmd_make_drink(order_uuid, drink_number, drink_size, order.price)
 
     return HttpResponse(status=200)
 
