@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from payments.views import qr_code_redirect, process_payment, yookassa_payment_process, yookassa_payment_result_webhook
+from payments.views import qr_code_redirect, process_payment, yookassa_payment_process, yookassa_payment_result_webhook, initiate_payment
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,4 +25,5 @@ urlpatterns = [
     path('v1/process_payment/', process_payment, name='process_payment'),
     path('v1/yook-pay', yookassa_payment_process, name='yookassa_payment_process'),
     path('v1/yook-pay-webhook', yookassa_payment_result_webhook, name='yookassa_payment_result_webhook'),
+    path('v1/initiate-payment', initiate_payment, name='initiate_payment'),
 ]

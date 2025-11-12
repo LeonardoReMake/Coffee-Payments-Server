@@ -138,22 +138,29 @@ def yookassa_payment_process(request):
     )
     log_info(f"Order {order.id} created with status 'created'. Payment scenario: {device.payment_scenario}", 'yookassa_payment_process')
     
-    # Execute payment scenario
-    try:
-        from payments.services.payment_scenario_service import PaymentScenarioService
-        return PaymentScenarioService.execute_scenario(device, order, drink_details)
-    except ValueError as e:
-        # Missing credentials or redirect_url
-        order.status = 'failed'
-        order.save()
-        log_error(f"Failed to execute payment scenario for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'yookassa_payment_process', 'ERROR')
-        return render_error_page(str(e), 400)
-    except Exception as e:
-        # Other errors during payment processing
-        order.status = 'failed'
-        order.save()
-        log_error(f"Failed to process payment for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'yookassa_payment_process', 'ERROR')
-        return render_error_page('Service temporarily unavailable', 503)
+    # Check payment scenario and conditionally show order info screen
+    if device.payment_scenario in ['Yookassa', 'TBank']:
+        # For Yookassa and TBank: show order info screen
+        log_info(f"Showing order info screen for Order {order.id} with scenario {device.payment_scenario}", 'yookassa_payment_process')
+        return show_order_info(request, device, order, drink_details)
+    else:
+        # For Custom scenario: execute payment scenario immediately
+        log_info(f"Executing payment scenario immediately for Order {order.id} with scenario {device.payment_scenario}", 'yookassa_payment_process')
+        try:
+            from payments.services.payment_scenario_service import PaymentScenarioService
+            return PaymentScenarioService.execute_scenario(device, order, drink_details)
+        except ValueError as e:
+            # Missing credentials or redirect_url
+            order.status = 'failed'
+            order.save()
+            log_error(f"Failed to execute payment scenario for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'yookassa_payment_process', 'ERROR')
+            return render_error_page(str(e), 400)
+        except Exception as e:
+            # Other errors during payment processing
+            order.status = 'failed'
+            order.save()
+            log_error(f"Failed to process payment for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'yookassa_payment_process', 'ERROR')
+            return render_error_page('Service temporarily unavailable', 503)
 
 @csrf_exempt
 def yookassa_payment_result_webhook(request):
@@ -254,6 +261,200 @@ def process_payment(request):
         return HttpResponse('Payment processed successfully')
     return HttpResponse('Invalid request', status=400)
     
+def show_order_info(request, device, order, drink_details):
+    """
+    Render the order information screen before payment initiation.
+    
+    Args:
+        request: HttpRequest object
+        device: Device instance
+        order: Order instance (status='created')
+        drink_details: Dict with drink information from Tmetr API
+    
+    Returns:
+        HttpResponse with rendered order_info_screen.html template
+    """
+    # Size mapping from database format (1,2,3) to Russian labels
+    SIZE_LABELS = {
+        1: 'маленький',
+        2: 'средний',
+        3: 'большой'
+    }
+    
+    # Extract drink information from drink_details
+    drink_name = drink_details.get('name', order.drink_name) if drink_details else order.drink_name
+    
+    # Map drink size to Russian label
+    drink_size_label = SIZE_LABELS.get(order.size, 'неизвестный размер')
+    
+    # Format price from kopecks to rubles
+    drink_price_rubles = order.price / 100
+    
+    # Prepare context dictionary
+    context = {
+        'device': device,
+        'order': order,
+        'drink_name': drink_name,
+        'drink_size': drink_size_label,
+        'drink_price': drink_price_rubles,
+        'logo_url': device.logo_url,
+        'location': device.location,
+        'client_info': device.client_info,
+        'payment_scenario': device.payment_scenario
+    }
+    
+    # Log order info screen rendering event
+    log_info(
+        f"Rendering order info screen for Order {order.id}, "
+        f"Device {device.device_uuid}, Scenario {device.payment_scenario}",
+        'show_order_info'
+    )
+    
+    # Render template
+    return render(request, 'payments/order_info_screen.html', context)
+
+
+@csrf_exempt
+def initiate_payment(request):
+    """
+    Handle payment initiation from order info screen.
+    
+    Args:
+        request: HttpRequest object with POST data containing order_id
+    
+    Returns:
+        HttpResponseRedirect: Redirect to payment provider URL on success
+        JsonResponse: Error response with user-friendly message on failure
+    """
+    from django.http import JsonResponse
+    from payments.user_messages import ERROR_MESSAGES
+    from payments.services.payment_scenario_service import PaymentScenarioService
+    
+    if request.method != 'POST':
+        return JsonResponse(
+            {'error': ERROR_MESSAGES['invalid_request']},
+            status=400
+        )
+    
+    # Parse request body for JSON data
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+            order_id = data.get('order_id')
+        else:
+            order_id = request.POST.get('order_id')
+    except json.JSONDecodeError:
+        log_error(
+            "Failed to parse JSON request body",
+            'initiate_payment',
+            'ERROR'
+        )
+        return JsonResponse(
+            {'error': ERROR_MESSAGES['invalid_request']},
+            status=400
+        )
+    
+    # Validate order_id parameter
+    if not order_id:
+        log_error(
+            "Missing order_id parameter in payment initiation request",
+            'initiate_payment',
+            'ERROR'
+        )
+        return JsonResponse(
+            {'error': ERROR_MESSAGES['missing_order_id']},
+            status=400
+        )
+    
+    # Log payment initiation attempt with all request parameters
+    log_info(
+        f"Payment initiation attempt for order_id={order_id}. "
+        f"Request method: {request.method}, Content-Type: {request.content_type}",
+        'initiate_payment'
+    )
+    
+    # Retrieve Order instance
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        log_error(
+            f"Order not found: {order_id}",
+            'initiate_payment',
+            'ERROR'
+        )
+        return JsonResponse(
+            {'error': ERROR_MESSAGES['order_not_found']},
+            status=404
+        )
+    
+    # Check if order has expired
+    if order.is_expired():
+        log_error(
+            f"Order {order.id} has expired. Expires at: {order.expires_at}",
+            'initiate_payment',
+            'ERROR'
+        )
+        return JsonResponse(
+            {'error': ERROR_MESSAGES['order_expired']},
+            status=400
+        )
+    
+    # Get device and prepare drink_details for payment scenario
+    device = order.device
+    
+    # Reconstruct drink_details from order data
+    # This is needed for PaymentScenarioService.execute_scenario
+    drink_details = {
+        'price': int(order.price),  # Price in kopecks
+        'name': order.drink_name,
+        'drink_id': 'unknown',  # We don't have this stored in Order
+    }
+    
+    # Execute payment scenario
+    try:
+        log_info(
+            f"Executing payment scenario for Order {order.id}. "
+            f"Device: {device.device_uuid}, Scenario: {device.payment_scenario}, "
+            f"Price: {order.price}, Drink: {order.drink_name}",
+            'initiate_payment'
+        )
+        
+        response = PaymentScenarioService.execute_scenario(device, order, drink_details)
+        
+        log_info(
+            f"Payment scenario executed successfully for Order {order.id}. "
+            f"Status: {order.status}",
+            'initiate_payment'
+        )
+        
+        return response
+        
+    except ValueError as e:
+        # Missing credentials or configuration error
+        log_error(
+            f"Payment initiation failed for Order {order.id}: {str(e)}. "
+            f"Scenario: {device.payment_scenario}, Device: {device.device_uuid}",
+            'initiate_payment',
+            'ERROR'
+        )
+        return JsonResponse(
+            {'error': ERROR_MESSAGES['missing_credentials']},
+            status=503
+        )
+    except Exception as e:
+        # Other errors during payment processing
+        log_error(
+            f"Payment creation failed for Order {order.id}: {str(e)}. "
+            f"Scenario: {device.payment_scenario}, Device: {device.device_uuid}",
+            'initiate_payment',
+            'ERROR'
+        )
+        return JsonResponse(
+            {'error': ERROR_MESSAGES['payment_creation_failed']},
+            status=503
+        )
+
+
 def render_receipt_data(request, device, drink_name, drink_price, drink_size, company_name):
     context = {
         'device': device,

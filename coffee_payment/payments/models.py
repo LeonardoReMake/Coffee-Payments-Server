@@ -39,6 +39,16 @@ class Device(models.Model):
         default='Yookassa',
         help_text='Payment scenario for this device'
     )
+    logo_url = models.URLField(
+        null=True,
+        blank=True,
+        help_text='URL to merchant logo image displayed on order screen'
+    )
+    client_info = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Custom information displayed to customers on order screen'
+    )
 
     def clean(self):
         from django.conf import settings

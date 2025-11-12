@@ -204,6 +204,16 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
+        },
+        'show_order_info': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'initiate_payment': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
         }
     },
 }
