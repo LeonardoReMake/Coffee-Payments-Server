@@ -30,6 +30,10 @@ TMETR_HOST = os.getenv('TMETR_HOST', 'test.telemetry.fwsoft.ru')
 # Order expiration time in minutes
 ORDER_EXPIRATION_MINUTES = 15
 
+# Payment scenarios configuration
+PAYMENT_SCENARIOS = ['Yookassa', 'TBank', 'Custom']
+DEFAULT_PAYMENT_SCENARIO = 'Yookassa'
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 

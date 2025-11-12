@@ -136,27 +136,23 @@ def yookassa_payment_process(request):
         price=drink_price,
         status='created'
     )
-    log_info(f"Order {order.id} created with status 'created'", 'yookassa_payment_process')
+    log_info(f"Order {order.id} created with status 'created'. Payment scenario: {device.payment_scenario}", 'yookassa_payment_process')
     
-    # Try to create payment
+    # Execute payment scenario
     try:
-        payment = create_payment(drink_price/100, f'Оплата напитка: {drink_name}', "https://google.com", drink_number, order_uuid, drink_size)
-        payment_data = json.loads(payment.json())
-        
-        # Update order with payment information and change status to 'pending'
-        payment_id = payment_data['id']
-        order.external_order_id = payment_id
-        order.status = 'pending'
-        order.save()
-        log_info(f"Order {order.id} status updated to 'pending' with payment_id {payment_id}", 'yookassa_payment_process')
-        
-        payment_url = (payment_data['confirmation'])['confirmation_url']
-        return HttpResponseRedirect(payment_url)
-    except Exception as e:
-        # If payment creation fails, update order status to 'failed'
+        from payments.services.payment_scenario_service import PaymentScenarioService
+        return PaymentScenarioService.execute_scenario(device, order, drink_details)
+    except ValueError as e:
+        # Missing credentials or redirect_url
         order.status = 'failed'
         order.save()
-        log_error(f"Failed to create payment for order {order.id}: {str(e)}", 'yookassa_payment_process', 'ERROR')
+        log_error(f"Failed to execute payment scenario for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'yookassa_payment_process', 'ERROR')
+        return render_error_page(str(e), 400)
+    except Exception as e:
+        # Other errors during payment processing
+        order.status = 'failed'
+        order.save()
+        log_error(f"Failed to process payment for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'yookassa_payment_process', 'ERROR')
         return render_error_page('Service temporarily unavailable', 503)
 
 @csrf_exempt

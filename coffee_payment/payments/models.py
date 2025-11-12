@@ -34,6 +34,21 @@ class Device(models.Model):
         ('error', 'Error')
     ])
     last_interaction = models.DateTimeField()
+    payment_scenario = models.CharField(
+        max_length=50,
+        default='Yookassa',
+        help_text='Payment scenario for this device'
+    )
+
+    def clean(self):
+        from django.conf import settings
+        from django.core.exceptions import ValidationError
+        
+        available_scenarios = getattr(settings, 'PAYMENT_SCENARIOS', ['Yookassa'])
+        if self.payment_scenario not in available_scenarios:
+            raise ValidationError(
+                f'Invalid payment scenario. Must be one of: {", ".join(available_scenarios)}'
+            )
 
     def __str__(self):
         return f"Device {self.device_uuid} ({self.location})"
@@ -156,3 +171,26 @@ class TBankPayment(models.Model):
 
     def __str__(self):
         return f"Payment {self.order_id} - {self.status}"
+
+
+class MerchantCredentials(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    merchant = models.ForeignKey(
+        Merchant,
+        on_delete=models.CASCADE,
+        related_name='credentials'
+    )
+    scenario = models.CharField(max_length=50)
+    credentials = models.JSONField(
+        help_text='Credentials in JSON format. Example for Yookassa: {"account_id": "...", "secret_key": "..."}'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('merchant', 'scenario')
+        verbose_name = 'Merchant Credentials'
+        verbose_name_plural = 'Merchant Credentials'
+    
+    def __str__(self):
+        return f"{self.merchant.name} - {self.scenario}"
