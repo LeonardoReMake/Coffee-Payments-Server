@@ -270,7 +270,7 @@ class InitiatePaymentTests(OrderInfoScreenTestCase):
     
     @patch('payments.services.payment_scenario_service.PaymentScenarioService.execute_scenario')
     def test_successful_payment_initiation_returns_redirect(self, mock_execute):
-        """Test successful payment initiation returns redirect to payment URL."""
+        """Test successful payment initiation returns JSON with redirect URL."""
         order = self.create_test_order(self.device_yookassa)
         
         # Mock successful payment creation
@@ -285,8 +285,10 @@ class InitiatePaymentTests(OrderInfoScreenTestCase):
         
         response = initiate_payment(request)
         
-        self.assertIsInstance(response, HttpResponseRedirect)
-        self.assertEqual(response.url, 'https://payment.example.com/pay')
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(response.content)
+        self.assertEqual(response_data['redirect_url'], 'https://payment.example.com/pay')
         mock_execute.assert_called_once()
     
     @patch('payments.services.yookassa_service.create_payment')

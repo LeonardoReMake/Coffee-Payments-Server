@@ -323,8 +323,7 @@ def initiate_payment(request):
         request: HttpRequest object with POST data containing order_id
     
     Returns:
-        HttpResponseRedirect: Redirect to payment provider URL on success
-        JsonResponse: Error response with user-friendly message on failure
+        JsonResponse: JSON response with redirect_url on success or error message on failure
     """
     from django.http import JsonResponse
     from payments.user_messages import ERROR_MESSAGES
@@ -427,7 +426,13 @@ def initiate_payment(request):
             'initiate_payment'
         )
         
-        return response
+        # Extract redirect URL from HttpResponseRedirect and return as JSON
+        if isinstance(response, HttpResponseRedirect):
+            redirect_url = response.url
+            return JsonResponse({'redirect_url': redirect_url}, status=200)
+        else:
+            # If response is not a redirect, return it as-is
+            return response
         
     except ValueError as e:
         # Missing credentials or configuration error

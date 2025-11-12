@@ -150,10 +150,11 @@ class FullYookassaPaymentFlowTest(OrderInfoIntegrationTestCase):
                 content_type='application/json'
             )
             
-            # Step 4: Verify redirect to Yookassa payment URL
-            self.assertEqual(payment_response.status_code, 302)
+            # Step 4: Verify JSON response with redirect URL to Yookassa payment
+            self.assertEqual(payment_response.status_code, 200)
+            payment_data = json.loads(payment_response.content)
             self.assertEqual(
-                payment_response.url,
+                payment_data['redirect_url'],
                 'https://yookassa.integration.example.com/pay'
             )
             
