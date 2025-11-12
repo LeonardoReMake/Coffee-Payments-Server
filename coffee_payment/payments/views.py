@@ -4,43 +4,12 @@ from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from payments.models import Device, Order, Drink
-from payments.services.qr_code_service import validate_device, validate_merchant, get_redirect_url
+from payments.services.qr_code_service import validate_device, validate_merchant
 from payments.utils.logging import log_error, log_info
 from payments.services.telemetry_service import get_drink_price
 from payments.services.yookassa_service import create_payment
 from django.views.decorators.csrf import csrf_exempt
 from payments.services.tmetr_service import TmetrService
-
-# Example: GET /v1/pay?deviceUuid=test&drinkNo=9b900a2e63042d350f45b6675ef26ced&size=1&random=waxoqk&ts=1742198482&salt=b6c2cca0340a82d0dc843243299800d7&drinkName=Молочная пена&uuid=20250317110122659ba6d7-9ace-cndn
-def qr_code_redirect(request):
-    device_uuid = request.GET.get('deviceUuid')
-
-    if not device_uuid:
-        log_error('Missing deviceUUID parameter', 'qr_code_redirect', 'ERROR')
-        return render_error_page('Missing deviceUUID parameter', 400)
-
-    try:
-        # Проверяем существование устройства
-        device = validate_device(device_uuid)
-        # Проверяем права продавца
-        validate_merchant(device)
-        # Формируем URL редиректа
-        query_params = request.GET.urlencode()
-        final_url = get_redirect_url(device, query_params)
-        log_info(f"Redirecting to: {final_url}", 'qr_code_redirect')
-        return HttpResponseRedirect(final_url)
-    except Http404 as e:
-        # Если устройство не найдено, возвращаем ошибку 404
-        log_error(str(e), 'qr_code_redirect', 'ERROR')
-        return render_error_page('Device not found', 404)
-    except ValueError as e:
-        # В случае истекших прав продавца возвращаем 403
-        log_error(str(e), 'qr_code_redirect', 'FORBIDDEN')
-        return render_error_page(str(e), 403)
-    except Exception as e:
-        # Для других ошибок возвращаем 500
-        log_error(str(e), 'qr_code_redirect', 'ERROR')
-        return render_error_page('An unexpected error occurred', 500)
 
 def render_error_page(message, status_code):
     """
@@ -78,17 +47,85 @@ def tbank_payment_proccessign(request):
         return render_error_page('Device not found', 404)
 
 
-# GET /v1/yook-pay?deviceUuid=test&drinkName=americano&size=1&price=10100&drinkNo=cmdrinkid&uuid=[orderUUID]
+# GET /v1/pay?deviceUuid=test&drinkName=americano&size=1&price=10100&drinkNo=cmdrinkid&uuid=[orderUUID]
 @csrf_exempt
-def yookassa_payment_process(request):
-    drink_price = int(5000) # фиксированная цена 50 рублей
+def process_payment_flow(request):
+    """
+    Main payment flow handler for QR code scans from coffee machines.
+    
+    This function processes payment requests initiated by scanning QR codes on coffee machines.
+    It handles all payment scenarios (Yookassa, TBank, Custom) by:
+    1. Validating all required parameters
+    2. Validating device and merchant permissions
+    3. Retrieving drink information from Tmetr API
+    4. Creating an order with 'created' status
+    5. Routing to appropriate payment handler based on device payment scenario
+    
+    Args:
+        request (HttpRequest): Django HTTP request object containing GET parameters:
+            - deviceUuid (str, required): UUID of the coffee machine device
+            - drinkName (str, required): Name of the drink
+            - drinkNo (str, required): Drink ID at the device
+            - size (str, required): Drink size ('0'=small, '1'=medium, '2'=large)
+            - uuid (str, required): Order UUID
+    
+    Returns:
+        HttpResponse: One of the following:
+            - Rendered order info screen (for Yookassa/TBank scenarios)
+            - HttpResponseRedirect to payment page (for Custom scenario)
+            - Error page with appropriate HTTP status code
+    
+    Raises:
+        Http404: If device is not found
+        ValueError: If merchant permissions have expired
+        requests.RequestException: If Tmetr API request fails
+    
+    Error Handling:
+        - 400: Missing required parameters
+        - 404: Device not found
+        - 403: Merchant permissions expired
+        - 503: Service unavailable (Tmetr API failure, missing credentials)
+        - 500: Unexpected errors
+    """
+    from payments.user_messages import ERROR_MESSAGES
+    
+    # Extract all request parameters
     drink_name = request.GET.get('drinkName')
     drink_number = request.GET.get('drinkNo')
     order_uuid = request.GET.get('uuid')
     drink_size = request.GET.get('size')
     device_uuid = request.GET.get('deviceUuid')
+    
+    # Log all incoming request parameters
+    log_info(
+        f"Starting payment flow. Request params: deviceUuid={device_uuid}, "
+        f"drinkNo={drink_number}, drinkName={drink_name}, size={drink_size}, uuid={order_uuid}",
+        'process_payment_flow'
+    )
+    
+    # Validate all required parameters
+    if not all([device_uuid, drink_name, drink_number, order_uuid, drink_size]):
+        log_error('Missing required parameters', 'process_payment_flow', 'ERROR')
+        return render_error_page(ERROR_MESSAGES['missing_parameters'], 400)
+    
+    # Validate device and merchant using qr_code_service functions
+    try:
+        device = validate_device(device_uuid)
+        validate_merchant(device)
+        
+        # Log after successful device validation
+        log_info(
+            f"Device validated: {device.device_uuid}, payment_scenario={device.payment_scenario}",
+            'process_payment_flow'
+        )
+    except Http404 as e:
+        log_error(f'Device not found: {device_uuid}', 'process_payment_flow', 'ERROR')
+        return render_error_page(ERROR_MESSAGES['device_not_found'], 404)
+    except ValueError as e:
+        log_error(f'Merchant validation failed: {str(e)}', 'process_payment_flow', 'FORBIDDEN')
+        return render_error_page(ERROR_MESSAGES['merchant_expired'], 403)
 
-    # TODO: получить цену напитка /api/ui/v1/static/drink
+    # Get drink information from Tmetr API
     tmetr_service = TmetrService()
     drink_size_dict = {
         '0': 'SMALL',
@@ -103,23 +140,27 @@ def yookassa_payment_process(request):
             drink_size=drink_size_dict[drink_size]
         )
     except requests.RequestException as e:
-        log_error(f'API request failed: {str(e)}', 'yookassa_payment_process', 'ERROR')
-        return render_error_page('Service temporarily unavailable', 503)
+        log_error(f'Tmetr API request failed: {str(e)}', 'process_payment_flow', 'ERROR')
+        return render_error_page(ERROR_MESSAGES['service_unavailable'], 503)
     except Exception as e:
-        log_error(f'Error while getting drink information: {str(e)}', 'yookassa_payment_process', 'ERROR')
-        return render_error_page('Device not found', 404)
+        log_error(f'Error while getting drink information: {str(e)}', 'process_payment_flow', 'ERROR')
+        return render_error_page(ERROR_MESSAGES['service_unavailable'], 503)
 
-    # Correct way to check dictionary key and value
+    # Extract drink price from API response
     drink_price = drink_details.get('price', 5000) if drink_details is not None else 5000
     if drink_price == 0:
         drink_price = 5000
-    log_info(f"Current price for drink {drink_price}", 'yookassa_payment_process')
     
-    log_info(f"Starting yookassa process", 'yookassa_payment_process')
+    # Log after getting drink information
+    log_info(
+        f"Drink details retrieved: price={drink_price}, name={drink_name}",
+        'process_payment_flow'
+    )
     
-    # Get device and merchant first
-    device = get_object_or_404(Device, device_uuid=device_uuid)
+    # Get merchant from device
     merchant = device.merchant
+    
+    # Map drink size from string to integer
     size_mapping = {
         '0': 1,
         '1': 2,
@@ -127,7 +168,7 @@ def yookassa_payment_process(request):
     }
     drink_size_int = size_mapping.get(drink_size, 1)
     
-    # Create order with 'created' status first
+    # Create order with 'created' status
     order = Order.objects.create(
         drink_name=drink_name,
         device=device,
@@ -136,16 +177,22 @@ def yookassa_payment_process(request):
         price=drink_price,
         status='created'
     )
-    log_info(f"Order {order.id} created with status 'created'. Payment scenario: {device.payment_scenario}", 'yookassa_payment_process')
+    log_info(f"Order {order.id} created with status 'created'. Payment scenario: {device.payment_scenario}", 'process_payment_flow')
+    
+    # Log routing decision
+    log_info(
+        f"Routing to scenario handler: {device.payment_scenario} for Order {order.id}",
+        'process_payment_flow'
+    )
     
     # Check payment scenario and conditionally show order info screen
     if device.payment_scenario in ['Yookassa', 'TBank']:
         # For Yookassa and TBank: show order info screen
-        log_info(f"Showing order info screen for Order {order.id} with scenario {device.payment_scenario}", 'yookassa_payment_process')
+        log_info(f"Showing order info screen for Order {order.id} with scenario {device.payment_scenario}", 'process_payment_flow')
         return show_order_info(request, device, order, drink_details)
     else:
         # For Custom scenario: execute payment scenario immediately
-        log_info(f"Executing payment scenario immediately for Order {order.id} with scenario {device.payment_scenario}", 'yookassa_payment_process')
+        log_info(f"Executing payment scenario immediately for Order {order.id} with scenario {device.payment_scenario}", 'process_payment_flow')
         try:
             from payments.services.payment_scenario_service import PaymentScenarioService
             return PaymentScenarioService.execute_scenario(device, order, drink_details)
@@ -153,14 +200,14 @@ def yookassa_payment_process(request):
             # Missing credentials or redirect_url
             order.status = 'failed'
             order.save()
-            log_error(f"Failed to execute payment scenario for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'yookassa_payment_process', 'ERROR')
-            return render_error_page(str(e), 400)
+            log_error(f"Failed to execute payment scenario for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'process_payment_flow', 'ERROR')
+            return render_error_page(ERROR_MESSAGES['missing_credentials'], 503)
         except Exception as e:
             # Other errors during payment processing
             order.status = 'failed'
             order.save()
-            log_error(f"Failed to process payment for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'yookassa_payment_process', 'ERROR')
-            return render_error_page('Service temporarily unavailable', 503)
+            log_error(f"Failed to process payment for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'process_payment_flow', 'ERROR')
+            return render_error_page(ERROR_MESSAGES['service_unavailable'], 503)
 
 @csrf_exempt
 def yookassa_payment_result_webhook(request):

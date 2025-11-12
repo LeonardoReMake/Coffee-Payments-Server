@@ -16,14 +16,22 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from payments.views import qr_code_redirect, process_payment, yookassa_payment_process, yookassa_payment_result_webhook, initiate_payment
+from payments.views import process_payment, process_payment_flow, yookassa_payment_result_webhook, initiate_payment
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('v1/pay', qr_code_redirect, name='qr_code_redirect'),
-    path('v1/tbank-pay', qr_code_redirect, name='qr_code_redirect'),
+    
+    # Main payment flow endpoint - handles QR code scanning and payment scenario routing
+    path('v1/pay', process_payment_flow, name='process_payment_flow'),
+    
+    # Legacy aliases for backward compatibility
+    path('v1/tbank-pay', process_payment_flow, name='tbank_pay_legacy'),
+    path('v1/yook-pay', process_payment_flow, name='yook_pay_legacy'),
+    
+    # Payment processing endpoints
     path('v1/process_payment/', process_payment, name='process_payment'),
-    path('v1/yook-pay', yookassa_payment_process, name='yookassa_payment_process'),
-    path('v1/yook-pay-webhook', yookassa_payment_result_webhook, name='yookassa_payment_result_webhook'),
     path('v1/initiate-payment', initiate_payment, name='initiate_payment'),
+    
+    # Webhook endpoints
+    path('v1/yook-pay-webhook', yookassa_payment_result_webhook, name='yookassa_payment_result_webhook'),
 ]

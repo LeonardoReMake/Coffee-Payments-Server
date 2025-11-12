@@ -190,11 +190,6 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        'qr_code_redirect': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
         'yookassa_payment_result_webhook': {
             'handlers': ['file'],
             'level': 'DEBUG',

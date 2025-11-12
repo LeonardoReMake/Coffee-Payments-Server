@@ -10,7 +10,7 @@ from django.test import TestCase, RequestFactory
 from django.utils.timezone import now
 from django.http import HttpResponseRedirect, JsonResponse
 from payments.models import Merchant, Device, Order, MerchantCredentials
-from payments.views import show_order_info, initiate_payment, yookassa_payment_process
+from payments.views import show_order_info, initiate_payment, process_payment_flow
 from payments.user_messages import ERROR_MESSAGES
 
 
@@ -411,7 +411,7 @@ class PaymentFlowRoutingTests(OrderInfoScreenTestCase):
             }
         )
         
-        response = yookassa_payment_process(request)
+        response = process_payment_flow(request)
         
         # Should redirect directly to custom URL without showing order info screen
         self.assertIsInstance(response, HttpResponseRedirect)
