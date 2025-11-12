@@ -1,0 +1,90 @@
+# Implementation Plan
+
+- [x] 1. Добавить настройку времени протухания заказов
+  - Добавить параметр ORDER_EXPIRATION_MINUTES в coffee_payment/settings.py со значением по умолчанию 15 минут
+  - _Requirements: 7.1, 7.2, 7.3_
+
+- [x] 2. Обновить модель Order с новыми статусами и полем протухания
+  - [x] 2.1 Обновить STATUS_CHOICES в модели Order
+    - Заменить существующие статусы на новый набор: created, pending, paid, not_paid, make_pending, successful, failed
+    - _Requirements: 1.1, 2.1, 3.1, 3.2, 4.1, 5.1, 6.1_
+  - [x] 2.2 Добавить поле expires_at в модель Order
+    - Добавить поле expires_at типа DateTimeField
+    - _Requirements: 8.1, 8.3_
+  - [x] 2.3 Реализовать метод is_expired в модели Order
+    - Создать метод is_expired(), который сравнивает текущее время с expires_at
+    - Метод должен возвращать True если заказ протух, False если актуален
+    - _Requirements: 9.1, 9.2, 9.3_
+  - [x] 2.4 Переопределить метод save для автоматического расчета expires_at
+    - При создании нового заказа автоматически рассчитывать expires_at как created_at + ORDER_EXPIRATION_MINUTES
+    - Использовать timezone-aware datetime
+    - _Requirements: 8.2, 8.3_
+
+- [x] 3. Создать миграцию базы данных
+  - [x] 3.1 Сгенерировать миграцию для изменений модели Order
+    - Выполнить python manage.py makemigrations
+    - _Requirements: 2.1, 8.1_
+  - [x] 3.2 Добавить data migration для обновления существующих записей
+    - Обновить статус 'success' на 'successful' для существующих заказов
+    - Установить expires_at для существующих заказов как created_at + ORDER_EXPIRATION_MINUTES
+    - _Requirements: 8.2_
+
+- [x] 4. Обновить логику создания заказа в yookassa_payment_process
+  - [x] 4.1 Установить статус 'created' при создании Order
+    - Изменить начальный статус с 'pending' на 'created'
+    - _Requirements: 1.1, 1.2_
+  - [x] 4.2 Обновить статус на 'pending' после создания платежа
+    - После успешного вызова create_payment изменить статус заказа на 'pending'
+    - Сохранить external_order_id
+    - _Requirements: 2.1, 2.2, 2.3_
+  - [x] 4.3 Добавить обработку ошибок с переходом в статус 'failed'
+    - При ошибке создания платежа изменить статус на 'failed'
+    - Логировать ошибку с использованием log_error
+    - _Requirements: 5.1, 5.2, 5.3_
+
+- [x] 5. Обновить логику обработки webhook в yookassa_payment_result_webhook
+  - [x] 5.1 Добавить проверку протухания заказа
+    - Перед обработкой webhook проверить order.is_expired()
+    - Если заказ протух, логировать и возвращать HTTP 400
+    - _Requirements: 9.1, 9.2, 9.3_
+  - [x] 5.2 Обновить обработку успешной оплаты
+    - При event_type == 'payment.succeeded' изменять статус с 'pending' на 'paid'
+    - Логировать изменение статуса
+    - _Requirements: 3.1, 3.3_
+  - [x] 5.3 Добавить обработку неуспешной оплаты
+    - При event_type == 'payment.canceled' изменять статус с 'pending' на 'not_paid'
+    - Логировать изменение статуса
+    - _Requirements: 3.2, 3.3_
+  - [x] 5.4 Обновить статус после отправки команды в Tmetr API
+    - После успешного вызова send_make_command изменить статус с 'paid' на 'make_pending'
+    - Логировать параметры запроса
+    - _Requirements: 4.1, 4.2, 4.3_
+  - [x] 5.5 Добавить обработку ошибок Tmetr API
+    - При ошибке send_make_command изменить статус на 'failed'
+    - Логировать ошибку
+    - _Requirements: 5.1, 5.2, 5.3_
+
+- [x] 6. Написать unit тесты для модели Order
+  - [x] 6.1 Создать тест test_order_creation_with_expiration
+    - Проверить, что при создании заказа expires_at устанавливается корректно
+    - Проверить, что статус = 'created'
+    - _Requirements: 1.1, 8.2_
+  - [x] 6.2 Создать тест test_order_expiration_check
+    - Проверить is_expired() для протухшего заказа (возвращает True)
+    - Проверить is_expired() для актуального заказа (возвращает False)
+    - _Requirements: 9.1, 9.2, 9.3_
+  - [x] 6.3 Создать тест test_custom_expiration_time
+    - Установить ORDER_EXPIRATION_MINUTES = 30
+    - Проверить, что expires_at = created_at + 30 минут
+    - _Requirements: 7.1, 7.2, 8.2_
+
+- [x] 7. Написать integration тесты для flow обработки заказов
+  - [x] 7.1 Создать тест test_payment_flow_with_status_changes
+    - Симулировать полный цикл обработки заказа
+    - Проверить корректность переходов статусов на каждом этапе
+    - _Requirements: 1.1, 2.1, 3.1, 4.1_
+  - [x] 7.2 Создать тест test_expired_order_handling
+    - Создать заказ с коротким временем протухания
+    - Попытаться обработать webhook после протухания
+    - Проверить, что возвращается ошибка
+    - _Requirements: 9.1, 9.2, 9.3_
