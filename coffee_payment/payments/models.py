@@ -66,11 +66,31 @@ class Order(models.Model):
     status = models.CharField(max_length=50, choices=[
         ('created', 'Created'),
         ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('not_paid', 'Not Paid'),
+        ('make_pending', 'Make Pending'),
+        ('successful', 'Successful'),
         ('failed', 'Failed'),
-        ('success', 'Success'),
     ])
+    expires_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and not self.expires_at:
+            from django.utils.timezone import now
+            from datetime import timedelta
+            from django.conf import settings
+            
+            expiration_minutes = getattr(settings, 'ORDER_EXPIRATION_MINUTES', 15)
+            self.expires_at = now() + timedelta(minutes=expiration_minutes)
+        
+        super().save(*args, **kwargs)
+
+    def is_expired(self):
+        """Проверяет, протух ли заказ"""
+        from django.utils.timezone import now
+        return now() > self.expires_at
 
     def __str__(self):
         return f"Order {self.id}"

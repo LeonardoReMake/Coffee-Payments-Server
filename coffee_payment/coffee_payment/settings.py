@@ -27,6 +27,9 @@ SECRET_KEY = 'django-insecure-)8hc120s$c)^11n^fl==uogtt9e(qlu^(vc8u%hfy_67to6ox%
 TMETR_TOKEN = os.getenv('TMETR_TOKEN', 'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ4VHdiUnlMbnM3WTVkSzV2RlkwQ0xuX0JJNm1GMXU5WkVPQ09SUlRtZkg0In0.eyJleHAiOjE3NjE0NTYyMjYsImlhdCI6MTc2MTQyMDIyOCwiYXV0aF90aW1lIjoxNzYxNDIwMjI2LCJqdGkiOiI0NThlOTE3My1lNTZkLTQyYTItOTcwNy1hYTVjNjNiMzFjYzMiLCJpc3MiOiJodHRwczovL2xvZ2luLmRldi50bWV0ci5ydS9hdXRoL3JlYWxtcy9kZXYtdGVsZW1ldHJ5LXJlYWxtIiwiYXVkIjoiYWNjb3VudCIsInN1YiI6ImJkYmY1MmQ1LTQ0NzMtNDQ4Yi1hYjA5LTQyYzRlNjIxMWZjZiIsInR5cCI6IkJlYXJlciIsImF6cCI6ImRldi10ZWxlbWV0cnktY2xpZW50Iiwic2Vzc2lvbl9zdGF0ZSI6ImZmZTM1NzllLWQwNDQtNDA3OS04Mjg4LTc0YmM4M2FjMzdiOSIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiQklMTElOR19XUklURVIiLCJERVZJQ0VTX1dSSVRFUiIsIlNVQl9DTElFTlRTX0FETUlOIiwiVEVDSE5JQ0FMX0lORk9fQURNSU4iLCJCSUxMSU5HX0FETUlOIiwiVVNFUl9BRE1JTiIsImRlZmF1bHQtcm9sZXMtZGV2LXRlbGVtZXRyeS1yZWFsbSIsIk9XTl9DTElFTlRfUkVBREVSIiwiVVNFUl9SRUFERVIiLCJTVUJfQ0xJRU5UU19SRUFERVIiLCJURUNITklDQUxfSU5GT19XUklURVIiLCJGSU5BTkNFX0lORk9fQURNSU4iLCJPV05fQ0xJRU5UX0FETUlOIiwiU1VCX0NMSUVOVFNfV1JJVEVSIiwiQklMTElOR19SRUFERVIiLCJERVZJQ0VTX1JFQURFUiIsIk9XTl9DTElFTlRfV1JJVEVSIiwib2ZmbGluZV9hY2Nlc3MiLCJURUNITklDQUxfSU5GT19SRUFERVIiLCJVU0VSX1dSSVRFUiIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgZW1haWwgYXBpIHByb2ZpbGUgcm9sZXMiLCJzaWQiOiJmZmUzNTc5ZS1kMDQ0LTQwNzktODI4OC03NGJjODNhYzM3YjkiLCJsYXN0TmFtZSI6ItCQ0LvQuNC10LIiLCJmaXJzdE5hbWUiOiLQkNGA0YLQtdC8IDEiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY2xpZW50SWQiOiI1YmUxOGNiYy02Y2JhLTQ3NzQtYjVhYi0xMDQ4MjRjMGZiOGYiLCJnZW5kZXIiOiJNYWxlIiwibmFtZSI6ItCQ0YDRgtC10LwgMSDQkNC70LjQtdCyIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZXhwZXJ0LWNtIiwibG9jYWxlIjoicnUiLCJnaXZlbl9uYW1lIjoi0JDRgNGC0LXQvCAxIiwiZmFtaWx5X25hbWUiOiLQkNC70LjQtdCyIiwiZW1haWwiOiJleHBlcnQtY21AZndzb2Z0LnJ1In0.a7IObblUSdTaREnvcNrAqtEYgNetX--G_rUBK3Hktx3RY0vDEamIceJ2xt55s64BAzVVt1YwuTIEaIUebwcQVtc-npeg3eeEkWObZbGakKxVrBjOCRg4Pkz3RKN7_q8WrvheK3vAjJzb_WCdLXNKhHQSwwW4XWWSp45rYD4f6MvVOOo--DJrQnExs-qaiI0fbMhwxknodixlcUvgZyjxLHzWmtJz4G7vAS3X_ABoTkSPl-0kElqaCtQ77kaRb5S2v6cyWwJEKxBSr9PB-uEztG9hPQ06BTjoUGsA-FmGp_tgWWyNJ8-EuHJOsDX5ndf29STAtq1WwEovZ7WjbtPxlg')
 TMETR_HOST = os.getenv('TMETR_HOST', 'test.telemetry.fwsoft.ru')
 
+# Order expiration time in minutes
+ORDER_EXPIRATION_MINUTES = 15
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -89,16 +92,25 @@ WSGI_APPLICATION = 'coffee_payment.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
+# Use SQLite for testing if DB_NAME is not set
+if os.getenv('DB_NAME'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME'),
+            'USER': os.getenv('DB_USER'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST'),
+            'PORT': os.getenv('DB_PORT'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation

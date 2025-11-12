@@ -9,7 +9,6 @@ from payments.utils.logging import log_error, log_info
 from payments.services.telemetry_service import get_drink_price
 from payments.services.yookassa_service import create_payment
 from django.views.decorators.csrf import csrf_exempt
-from payments.services.cm_mqtt import send_cmd_make_drink
 from payments.services.tmetr_service import TmetrService
 
 # Example: GET /v1/pay?deviceUuid=test&drinkNo=9b900a2e63042d350f45b6675ef26ced&size=1&random=waxoqk&ts=1742198482&salt=b6c2cca0340a82d0dc843243299800d7&drinkName=Молочная пена&uuid=20250317110122659ba6d7-9ace-cndn
@@ -117,20 +116,8 @@ def yookassa_payment_process(request):
     log_info(f"Current price for drink {drink_price}", 'yookassa_payment_process')
     
     log_info(f"Starting yookassa process", 'yookassa_payment_process')
-    payment = create_payment(drink_price/100, f'Оплата напитка: {drink_name}', "https://google.com", drink_number, order_uuid, drink_size)
-    payment_data = json.loads(payment.json())
-
-    # Создание объекта Order на основе объекта payment
-    payment_id = payment_data['id']
-    payment_status = payment_data['status']
-    amount = int(float(payment_data['amount']['value']) * 100)  # Convert to kopecks
-    status_mapping = {
-        'pending': 'pending',
-        'waiting_for_capture': 'pending',
-        'succeeded': 'success',
-        'canceled': 'failed',
-    }
-    status = status_mapping.get(payment_status, 'failed')
+    
+    # Get device and merchant first
     device = get_object_or_404(Device, device_uuid=device_uuid)
     merchant = device.merchant
     size_mapping = {
@@ -138,20 +125,39 @@ def yookassa_payment_process(request):
         '1': 2,
         '2': 3
     }
-    drink_size = size_mapping.get(drink_size, 'неизвестный размер')
-
+    drink_size_int = size_mapping.get(drink_size, 1)
+    
+    # Create order with 'created' status first
     order = Order.objects.create(
-        external_order_id=payment_id,
         drink_name=drink_name,
         device=device,
         merchant=merchant,
-        size=drink_size,
-        price=amount,
-        status=status
+        size=drink_size_int,
+        price=drink_price,
+        status='created'
     )
-
-    payment_url = (payment_data['confirmation'])['confirmation_url']
-    return HttpResponseRedirect(payment_url)
+    log_info(f"Order {order.id} created with status 'created'", 'yookassa_payment_process')
+    
+    # Try to create payment
+    try:
+        payment = create_payment(drink_price/100, f'Оплата напитка: {drink_name}', "https://google.com", drink_number, order_uuid, drink_size)
+        payment_data = json.loads(payment.json())
+        
+        # Update order with payment information and change status to 'pending'
+        payment_id = payment_data['id']
+        order.external_order_id = payment_id
+        order.status = 'pending'
+        order.save()
+        log_info(f"Order {order.id} status updated to 'pending' with payment_id {payment_id}", 'yookassa_payment_process')
+        
+        payment_url = (payment_data['confirmation'])['confirmation_url']
+        return HttpResponseRedirect(payment_url)
+    except Exception as e:
+        # If payment creation fails, update order status to 'failed'
+        order.status = 'failed'
+        order.save()
+        log_error(f"Failed to create payment for order {order.id}: {str(e)}", 'yookassa_payment_process', 'ERROR')
+        return render_error_page('Service temporarily unavailable', 503)
 
 @csrf_exempt
 def yookassa_payment_result_webhook(request):
@@ -162,54 +168,81 @@ def yookassa_payment_result_webhook(request):
     event_type = event_json['event']
     payment_id = event_json['object']['id']
     
-    if (event_type == 'payment.succeeded'):
-        try:
-            # Найти объект Order по external_order_id
-            order = Order.objects.get(external_order_id=payment_id)
-            
-            # Изменить статус на success
-            order.status = 'success'
-            order.save()
-            
-            log_info(f"Order {order.id} status updated to success", 'django')
-        except Order.DoesNotExist:
-            log_error(f"Order with external_order_id {payment_id} not found", 'django', 'ERROR')
-            return HttpResponse(status=404)
-        except Exception as e:
-            log_error(f"Error updating order status: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
-            return HttpResponse(status=500)
-
-    #TODO: получить для устройства конфигурацию для подключения до mqtt и отправить сообщение для приготовления
-    drink_number = event_json['object']['metadata']['drink_number']
-    order_uuid = event_json['object']['metadata']['order_uuid']
-    drink_size = event_json['object']['metadata']['size']
-    drink_price_str = event_json['object']['amount']['value']
-    drink_price = int(float(drink_price_str)*100)
-    device = order.device
-
-    drink_size_dict = {
-        '0': 'SMALL',
-        '1': 'MEDIUM',
-        '2': 'BIG'
-    }
-
-    log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size_dict[drink_size]}, price kop {drink_price},  deviceUUID: {device.device_uuid}", 'django')
-
-    tmetr_service = TmetrService()
     try:
-        tmetr_service.send_make_command(
-            device_id=device.device_uuid, 
-            order_uuid=order_uuid, 
-            drink_uuid=drink_number, 
-            size=drink_size_dict[drink_size], 
-            price=drink_price
-            )
-    except requests.RequestException as e:
-        log_error(f'API request failed: {str(e)}', 'yookassa_payment_result_webhook', 'ERROR')
-        return render_error_page('Service temporarily unavailable', 503)
+        # Найти объект Order по external_order_id
+        order = Order.objects.get(external_order_id=payment_id)
+        
+        # Subtask 5.1: Проверка протухания заказа
+        if order.is_expired():
+            log_error(f"Order {order.id} has expired", 'yookassa_payment_result_webhook', 'ERROR')
+            return HttpResponse(status=400)
+        
+        # Subtask 5.2: Обработка успешной оплаты
+        if event_type == 'payment.succeeded':
+            old_status = order.status
+            order.status = 'paid'
+            order.save()
+            log_info(f"Order {order.id} status changed: {old_status} → paid", 'yookassa_payment_result_webhook')
+        
+        # Subtask 5.3: Обработка неуспешной оплаты
+        elif event_type == 'payment.canceled':
+            old_status = order.status
+            order.status = 'not_paid'
+            order.save()
+            log_info(f"Order {order.id} status changed: {old_status} → not_paid", 'yookassa_payment_result_webhook')
+            return HttpResponse(status=200)
+        
+    except Order.DoesNotExist:
+        log_error(f"Order with external_order_id {payment_id} not found", 'django', 'ERROR')
+        return HttpResponse(status=404)
     except Exception as e:
-        log_error(f'Error while sending make drink command: {str(e)}', 'yookassa_payment_result_webhook', 'ERROR')
-        return render_error_page('Device not found', 404)
+        log_error(f"Error updating order status: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
+        return HttpResponse(status=500)
+
+    # Только для успешных платежей продолжаем отправку команды в Tmetr API
+    if event_type == 'payment.succeeded':
+        #TODO: получить для устройства конфигурацию для подключения до mqtt и отправить сообщение для приготовления
+        drink_number = event_json['object']['metadata']['drink_number']
+        order_uuid = event_json['object']['metadata']['order_uuid']
+        drink_size = event_json['object']['metadata']['size']
+        drink_price_str = event_json['object']['amount']['value']
+        drink_price = int(float(drink_price_str)*100)
+        device = order.device
+
+        drink_size_dict = {
+            '0': 'SMALL',
+            '1': 'MEDIUM',
+            '2': 'BIG'
+        }
+
+        log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size_dict[drink_size]}, price kop {drink_price},  deviceUUID: {device.device_uuid}", 'django')
+
+        tmetr_service = TmetrService()
+        try:
+            # Subtask 5.4: Обновление статуса после отправки команды в Tmetr API
+            tmetr_service.send_make_command(
+                device_id=device.device_uuid, 
+                order_uuid=order_uuid, 
+                drink_uuid=drink_number, 
+                size=drink_size_dict[drink_size], 
+                price=drink_price
+            )
+            old_status = order.status
+            order.status = 'make_pending'
+            order.save()
+            log_info(f"Order {order.id} status changed: {old_status} → make_pending. Request params: device_id={device.device_uuid}, order_uuid={order_uuid}, drink_uuid={drink_number}, size={drink_size_dict[drink_size]}, price={drink_price}", 'yookassa_payment_result_webhook')
+        except requests.RequestException as e:
+            # Subtask 5.5: Обработка ошибок Tmetr API
+            order.status = 'failed'
+            order.save()
+            log_error(f"Failed to send make command for order {order.id}: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
+            return HttpResponse(status=503)
+        except Exception as e:
+            # Subtask 5.5: Обработка ошибок Tmetr API
+            order.status = 'failed'
+            order.save()
+            log_error(f"Failed to send make command for order {order.id}: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
+            return HttpResponse(status=503)
 
     return HttpResponse(status=200)
 
