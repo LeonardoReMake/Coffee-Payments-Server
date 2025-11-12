@@ -9,8 +9,6 @@ services:
       POSTGRES_DB: coffee_payment
       POSTGRES_USER: leonid
       POSTGRES_PASSWORD: nfk3m51dst
-    networks:
-      - cofpay_network
 
   web:
     build: .
@@ -32,12 +30,6 @@ services:
       - DJANGO_SUPERUSER_USERNAME=admin
       - DJANGO_SUPERUSER_PASSWORD=admin
       - DJANGO_SUPERUSER_EMAIL=admin@emailme.ru
-    networks:
-      - cofpay_network
 
 volumes:
   postgres_data:
-
-networks:
-  cofpay_network:
-    external: true
