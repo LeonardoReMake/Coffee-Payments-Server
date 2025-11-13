@@ -52,7 +52,7 @@ class Device(models.Model):
     client_error_info = models.TextField(
         null=True,
         blank=True,
-        help_text='Custom information displayed to customers on error screens (e.g., support contact)'
+        help_text='Custom information displayed to customers on error screens. Supports HTML formatting (e.g., <a href="tel:+1234567890">Call support</a>)'
     )
 
     def clean(self):

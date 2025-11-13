@@ -88,6 +88,22 @@
             margin: 0;
         }
         
+        /* Links in Client Error Info */
+        .client-error-info a {
+            color: #2c5f2d;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+        
+        .client-error-info a:hover {
+            color: #1a3a1b;
+            text-decoration: none;
+        }
+        
+        .client-error-info a:active {
+            color: #0f2410;
+        }
+        
         /* Tablet Styles (768px and up) */
         @media (min-width: 768px) {
             body {
@@ -124,6 +140,10 @@
             .client-error-info p {
                 font-size: 15px;
             }
+            
+            .client-error-info a {
+                font-size: 15px;
+            }
         }
         
         /* Desktop Styles (1024px and up) */
@@ -156,6 +176,10 @@
             }
             
             .client-error-info p {
+                font-size: 16px;
+            }
+            
+            .client-error-info a {
                 font-size: 16px;
             }
         }
@@ -199,7 +223,7 @@
         <!-- Client Error Info Section (displayed when available) -->
         {% if client_error_info %}
         <div class="client-error-info">
-            <p>{{ client_error_info }}</p>
+            <p>{{ client_error_info|safe }}</p>
         </div>
         {% endif %}
     </div>
