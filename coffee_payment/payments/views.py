@@ -170,26 +170,27 @@ def process_payment_flow(request):
         order_id=order_uuid
     )
     
-    # Log validation chain results
-    log_info(
-        f"Validation chain completed. valid={validation_result['valid']}, "
-        f"should_create_new_order={validation_result['should_create_new_order']}, "
-        f"error_message={validation_result['error_message']}",
-        'process_payment_flow'
-    )
-    
-    # Handle validation failure
-    if not validation_result['valid']:
-        log_error(
-            f"Validation chain failed for order {order_uuid}: {validation_result['error_message']}",
-            'process_payment_flow',
-            'ERROR'
-        )
-        return render_error_page(validation_result['error_message'], 400)
-    
     # Validate device and merchant using qr_code_service functions
     try:
         device = validate_device(device_uuid)
+
+        # Handle validation failure
+        if not validation_result['valid']:
+            log_error(
+                f"Validation chain failed for order {order_uuid}: {validation_result['error_message']}",
+                'process_payment_flow',
+                'ERROR'
+            )
+            return render_error_page(validation_result['error_message'], 400, device=device)
+        
+        # Log validation chain results
+        log_info(
+            f"Validation chain completed. valid={validation_result['valid']}, "
+            f"should_create_new_order={validation_result['should_create_new_order']}, "
+            f"error_message={validation_result['error_message']}",
+            'process_payment_flow'
+        )
+
         validate_merchant(device)
         
         # Log after successful device validation
