@@ -1,5 +1,6 @@
 import requests
 from django.conf import settings
+from django.utils import timezone
 from typing import Dict, Any, List
 
 class TmetrService:
@@ -63,6 +64,54 @@ class TmetrService:
         }]
         
         response = requests.post(url, headers=self.headers, json=payload)
+        response.raise_for_status()
+        
+        return response.json()
+
+    def get_device_heartbeat(self, device_id: str) -> Dict[str, Any]:
+        """
+        Get last heartbeat for a device from Tmetr API.
+        
+        Args:
+            device_id: UUID of the device
+            
+        Returns:
+            API response containing heartbeat data:
+            {
+                'content': [
+                    {
+                        'deviceId': str,
+                        'deviceIotName': str,
+                        'heartbeatCreatedAt': int  # Unix timestamp in server timezone
+                    }
+                ],
+                'totalElements': int,
+                'offset': int,
+                'limit': int
+            }
+            
+        Raises:
+            requests.RequestException: If API request fails
+        """
+        url = f'https://{self.host}/api/ui/v1/stat/heartbeat/recent'
+        
+        # Calculate timezone offset in hours
+        # Get current timezone offset from Django settings
+        now = timezone.now()
+        offset_seconds = now.utcoffset().total_seconds() if now.utcoffset() else 0
+        offset_hours = int(offset_seconds / 3600)
+        
+        # Create headers with X-TimeZoneOffset
+        headers = self.headers.copy()
+        headers['X-TimeZoneOffset'] = str(offset_hours)
+        
+        payload = {
+            "deviceIds": [device_id],
+            "offset": 0,
+            "limit": 1
+        }
+        
+        response = requests.post(url, headers=headers, json=payload)
         response.raise_for_status()
         
         return response.json()

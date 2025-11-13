@@ -108,6 +108,47 @@ def process_payment_flow(request):
         log_error('Missing required parameters', 'process_payment_flow', 'ERROR')
         return render_error_page(ERROR_MESSAGES['missing_parameters'], 400)
     
+    # Execute validation chain
+    from payments.services.validation_service import OrderValidationService
+    
+    # Prepare request parameters dictionary for validation
+    request_params = {
+        'deviceUuid': device_uuid,
+        'drinkName': drink_name,
+        'drinkNo': drink_number,
+        'uuid': order_uuid,
+        'size': drink_size
+    }
+    
+    log_info(
+        f"Executing validation chain for order {order_uuid}",
+        'process_payment_flow'
+    )
+    
+    # Execute validation chain with early termination on failure
+    validation_result = OrderValidationService.execute_validation_chain(
+        request_params=request_params,
+        device_uuid=device_uuid,
+        order_uuid=order_uuid
+    )
+    
+    # Log validation chain results
+    log_info(
+        f"Validation chain completed. valid={validation_result['valid']}, "
+        f"should_create_new_order={validation_result['should_create_new_order']}, "
+        f"error_message={validation_result['error_message']}",
+        'process_payment_flow'
+    )
+    
+    # Handle validation failure
+    if not validation_result['valid']:
+        log_error(
+            f"Validation chain failed for order {order_uuid}: {validation_result['error_message']}",
+            'process_payment_flow',
+            'ERROR'
+        )
+        return render_error_page(validation_result['error_message'], 400)
+    
     # Validate device and merchant using qr_code_service functions
     try:
         device = validate_device(device_uuid)
@@ -168,16 +209,30 @@ def process_payment_flow(request):
     }
     drink_size_int = size_mapping.get(drink_size, 1)
     
-    # Create order with 'created' status
-    order = Order.objects.create(
-        drink_name=drink_name,
-        device=device,
-        merchant=merchant,
-        size=drink_size_int,
-        price=drink_price,
-        status='created'
-    )
-    log_info(f"Order {order.id} created with status 'created'. Payment scenario: {device.payment_scenario}", 'process_payment_flow')
+    # Conditional order creation based on validation results
+    if validation_result['should_create_new_order']:
+        # Create new order with 'created' status
+        order = Order.objects.create(
+            drink_name=drink_name,
+            device=device,
+            merchant=merchant,
+            size=drink_size_int,
+            price=drink_price,
+            status='created'
+        )
+        log_info(
+            f"Order {order.id} created with status 'created'. "
+            f"Payment scenario: {device.payment_scenario}",
+            'process_payment_flow'
+        )
+    else:
+        # Use existing valid order from validation chain
+        order = validation_result['existing_order']
+        log_info(
+            f"Using existing order {order.id} with status '{order.status}'. "
+            f"Payment scenario: {device.payment_scenario}",
+            'process_payment_flow'
+        )
     
     # Log routing decision
     log_info(

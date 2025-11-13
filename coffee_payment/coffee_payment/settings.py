@@ -30,6 +30,10 @@ TMETR_HOST = os.getenv('TMETR_HOST', 'test.telemetry.fwsoft.ru')
 # Order expiration time in minutes
 ORDER_EXPIRATION_MINUTES = 15
 
+# Device online threshold in minutes
+# If last heartbeat is older than this value, device is considered offline
+DEVICE_ONLINE_THRESHOLD_MINUTES = 15
+
 # Payment scenarios configuration
 PAYMENT_SCENARIOS = ['Yookassa', 'TBank', 'Custom']
 DEFAULT_PAYMENT_SCENARIO = 'Yookassa'
