@@ -340,7 +340,7 @@ class ExecuteValidationChainTests(OrderValidationServiceTestCase):
         result = OrderValidationService.execute_validation_chain(
             request_params=request_params,
             device_uuid=self.device_uuid,
-            order_uuid=self.order_uuid
+            order_id=self.order_uuid
         )
         
         self.assertTrue(result['valid'])
@@ -375,7 +375,7 @@ class ExecuteValidationChainTests(OrderValidationServiceTestCase):
         result = OrderValidationService.execute_validation_chain(
             request_params=request_params,
             device_uuid=self.device_uuid,
-            order_uuid=self.order_uuid
+            order_id=self.order_uuid
         )
         
         self.assertFalse(result['valid'])
@@ -411,7 +411,7 @@ class ExecuteValidationChainTests(OrderValidationServiceTestCase):
         result = OrderValidationService.execute_validation_chain(
             request_params=request_params,
             device_uuid=self.device_uuid,
-            order_uuid=self.order_uuid
+            order_id=self.order_uuid
         )
         
         self.assertFalse(result['valid'])
@@ -448,7 +448,7 @@ class ExecuteValidationChainTests(OrderValidationServiceTestCase):
         result = OrderValidationService.execute_validation_chain(
             request_params=request_params,
             device_uuid=self.device_uuid,
-            order_uuid=self.order_uuid
+            order_id=self.order_uuid
         )
         
         self.assertFalse(result['valid'])
@@ -497,7 +497,7 @@ class ExecuteValidationChainTests(OrderValidationServiceTestCase):
         result = OrderValidationService.execute_validation_chain(
             request_params=request_params,
             device_uuid=self.device_uuid,
-            order_uuid=self.order_uuid
+            order_id=self.order_uuid
         )
         
         self.assertTrue(result['valid'])
@@ -531,7 +531,7 @@ class ExecuteValidationChainTests(OrderValidationServiceTestCase):
             OrderValidationService.execute_validation_chain(
                 request_params=request_params,
                 device_uuid=self.device_uuid,
-                order_uuid=self.order_uuid
+                order_id=self.order_uuid
             )
         
         # Verify logging

@@ -77,8 +77,21 @@ class Drink(models.Model):
 
 
 class Order(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    external_order_id = models.CharField(max_length=255, null=True, blank=True)  # New field for external order ID
+    """
+    Order model representing a coffee order.
+    
+    The id field accepts machine-generated order IDs from coffee machines
+    in custom formats (e.g., '20250317110122659ba6d7-9ace-cndn').
+    These IDs are provided via QR code parameters and serve as the primary
+    identifier for the order throughout the payment flow.
+    """
+    id = models.CharField(primary_key=True, max_length=255)
+    payment_reference_id = models.CharField(
+        max_length=255, 
+        null=True, 
+        blank=True,
+        help_text='Payment system reference ID (e.g., Yookassa payment_id)'
+    )
     drink_name = models.CharField(max_length=255)  # Replace ForeignKey with CharField for drink name
     device = models.ForeignKey(
         Device, on_delete=models.CASCADE, related_name="orders"

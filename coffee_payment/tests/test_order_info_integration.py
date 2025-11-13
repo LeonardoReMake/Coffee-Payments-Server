@@ -161,7 +161,7 @@ class FullYookassaPaymentFlowTest(OrderInfoIntegrationTestCase):
             # Step 5: Verify order status transitions: created → pending
             order.refresh_from_db()
             self.assertEqual(order.status, 'pending')
-            self.assertEqual(order.external_order_id, 'integration-payment-id-456')
+            self.assertEqual(order.payment_reference_id, 'integration-payment-id-456')
         
         # Verify Tmetr API was called with correct parameters
         mock_send_static_drink.assert_called_once_with(

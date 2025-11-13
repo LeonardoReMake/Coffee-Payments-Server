@@ -156,7 +156,7 @@ class PaymentScenarioService:
             payment_id = payment_data['id']
             
             # Update order with payment information and change status to 'pending'
-            order.external_order_id = payment_id
+            order.payment_reference_id = payment_id
             order.status = 'pending'
             order.save()
             
@@ -233,7 +233,7 @@ class PaymentScenarioService:
                 raise Exception(f"TBank payment failed: {error}")
             
             # Update order with payment information and change status to 'pending'
-            order.external_order_id = payment.payment_id
+            order.payment_reference_id = payment.payment_id
             order.status = 'pending'
             order.save()
             

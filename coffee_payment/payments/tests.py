@@ -168,14 +168,14 @@ class OrderIntegrationTestCase(TestCase):
                         "Order should start with 'created' status")
         
         # Step 2: Simulate payment creation - update to 'pending'
-        order.external_order_id = "test-payment-id-123"
+        order.payment_reference_id = "test-payment-id-123"
         order.status = 'pending'
         order.save()
         order.refresh_from_db()
         self.assertEqual(order.status, 'pending', 
                         "Order status should be 'pending' after payment creation")
-        self.assertEqual(order.external_order_id, "test-payment-id-123",
-                        "External order ID should be set")
+        self.assertEqual(order.payment_reference_id, "test-payment-id-123",
+                        "Payment reference ID should be set")
         
         # Step 3: Simulate successful payment webhook - update to 'paid'
         order.status = 'paid'
@@ -213,8 +213,8 @@ class OrderIntegrationTestCase(TestCase):
         order.expires_at = now() + timedelta(seconds=1)
         order.save()
         
-        # Set external_order_id and move to pending
-        order.external_order_id = "test-payment-id-expired"
+        # Set payment_reference_id and move to pending
+        order.payment_reference_id = "test-payment-id-expired"
         order.status = 'pending'
         order.save()
         
@@ -826,8 +826,8 @@ class PaymentScenarioIntegrationTestCase(TestCase):
             order.refresh_from_db()
             self.assertEqual(order.status, 'pending',
                            "Order status should be 'pending' after payment creation")
-            self.assertEqual(order.external_order_id, 'payment_123',
-                           "Order should have external_order_id set")
+            self.assertEqual(order.payment_reference_id, 'payment_123',
+                           "Order should have payment_reference_id set")
             
             # Verify redirect
             from django.http import HttpResponseRedirect
@@ -898,8 +898,8 @@ class PaymentScenarioIntegrationTestCase(TestCase):
             order.refresh_from_db()
             self.assertEqual(order.status, 'pending',
                            "Order status should be 'pending' after payment creation")
-            self.assertEqual(order.external_order_id, 'tbank_payment_456',
-                           "Order should have external_order_id set")
+            self.assertEqual(order.payment_reference_id, 'tbank_payment_456',
+                           "Order should have payment_reference_id set")
             
             # Verify redirect
             from django.http import HttpResponseRedirect

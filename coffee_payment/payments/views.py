@@ -108,6 +108,24 @@ def process_payment_flow(request):
         log_error('Missing required parameters', 'process_payment_flow', 'ERROR')
         return render_error_page(ERROR_MESSAGES['missing_parameters'], 400)
     
+    # Validate order ID is not empty and within length limits
+    if not order_uuid.strip():
+        log_error(
+            f'Empty order ID provided. Raw value: "{order_uuid}", length: {len(order_uuid)}',
+            'process_payment_flow',
+            'ERROR'
+        )
+        return render_error_page(ERROR_MESSAGES['invalid_order_id'], 400)
+    
+    if len(order_uuid) > 255:
+        log_error(
+            f'Order ID exceeds maximum length: {len(order_uuid)} characters. '
+            f'Order ID format: {order_uuid[:50]}... (truncated)',
+            'process_payment_flow',
+            'ERROR'
+        )
+        return render_error_page(ERROR_MESSAGES['invalid_order_id'], 400)
+    
     # Execute validation chain
     from payments.services.validation_service import OrderValidationService
     
@@ -129,7 +147,7 @@ def process_payment_flow(request):
     validation_result = OrderValidationService.execute_validation_chain(
         request_params=request_params,
         device_uuid=device_uuid,
-        order_uuid=order_uuid
+        order_id=order_uuid
     )
     
     # Log validation chain results
@@ -211,20 +229,31 @@ def process_payment_flow(request):
     
     # Conditional order creation based on validation results
     if validation_result['should_create_new_order']:
-        # Create new order with 'created' status
-        order = Order.objects.create(
-            drink_name=drink_name,
-            device=device,
-            merchant=merchant,
-            size=drink_size_int,
-            price=drink_price,
-            status='created'
-        )
-        log_info(
-            f"Order {order.id} created with status 'created'. "
-            f"Payment scenario: {device.payment_scenario}",
-            'process_payment_flow'
-        )
+        # Create new order with machine-generated ID from QR parameters
+        from django.db import IntegrityError
+        try:
+            order = Order.objects.create(
+                id=order_uuid,
+                drink_name=drink_name,
+                device=device,
+                merchant=merchant,
+                size=drink_size_int,
+                price=drink_price,
+                status='created'
+            )
+            log_info(
+                f"Order {order.id} created with status 'created'. "
+                f"Payment scenario: {device.payment_scenario}",
+                'process_payment_flow'
+            )
+        except IntegrityError as e:
+            log_error(
+                f'Failed to create order with ID {order_uuid}: {str(e)}. '
+                f'Order ID format: length={len(order_uuid)}, value={order_uuid[:100]}',
+                'process_payment_flow',
+                'ERROR'
+            )
+            return render_error_page(ERROR_MESSAGES['invalid_order_id'], 400)
     else:
         # Use existing valid order from validation chain
         order = validation_result['existing_order']
@@ -274,8 +303,15 @@ def yookassa_payment_result_webhook(request):
     payment_id = event_json['object']['id']
     
     try:
-        # Найти объект Order по external_order_id
-        order = Order.objects.get(external_order_id=payment_id)
+        # Extract order_uuid from payment metadata
+        order_uuid = event_json['object']['metadata']['order_uuid']
+        
+        # Find order by machine-generated ID (primary key)
+        order = Order.objects.get(id=order_uuid)
+        
+        # Store payment system reference ID
+        order.payment_reference_id = payment_id
+        order.save(update_fields=['payment_reference_id'])
         
         # Subtask 5.1: Проверка протухания заказа
         if order.is_expired():
@@ -286,19 +322,22 @@ def yookassa_payment_result_webhook(request):
         if event_type == 'payment.succeeded':
             old_status = order.status
             order.status = 'paid'
-            order.save()
+            order.save(update_fields=['status'])
             log_info(f"Order {order.id} status changed: {old_status} → paid", 'yookassa_payment_result_webhook')
         
         # Subtask 5.3: Обработка неуспешной оплаты
         elif event_type == 'payment.canceled':
             old_status = order.status
             order.status = 'not_paid'
-            order.save()
+            order.save(update_fields=['status'])
             log_info(f"Order {order.id} status changed: {old_status} → not_paid", 'yookassa_payment_result_webhook')
             return HttpResponse(status=200)
         
+    except KeyError:
+        log_error(f"Missing order_uuid in payment metadata for payment {payment_id}", 'yookassa_payment_result_webhook', 'ERROR')
+        return HttpResponse(status=400)
     except Order.DoesNotExist:
-        log_error(f"Order with external_order_id {payment_id} not found", 'django', 'ERROR')
+        log_error(f"Order with id {order_uuid} not found", 'yookassa_payment_result_webhook', 'ERROR')
         return HttpResponse(status=404)
     except Exception as e:
         log_error(f"Error updating order status: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
@@ -334,18 +373,18 @@ def yookassa_payment_result_webhook(request):
             )
             old_status = order.status
             order.status = 'make_pending'
-            order.save()
+            order.save(update_fields=['status'])
             log_info(f"Order {order.id} status changed: {old_status} → make_pending. Request params: device_id={device.device_uuid}, order_uuid={order_uuid}, drink_uuid={drink_number}, size={drink_size_dict[drink_size]}, price={drink_price}", 'yookassa_payment_result_webhook')
         except requests.RequestException as e:
             # Subtask 5.5: Обработка ошибок Tmetr API
             order.status = 'failed'
-            order.save()
+            order.save(update_fields=['status'])
             log_error(f"Failed to send make command for order {order.id}: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
             return HttpResponse(status=503)
         except Exception as e:
             # Subtask 5.5: Обработка ошибок Tmetr API
             order.status = 'failed'
-            order.save()
+            order.save(update_fields=['status'])
             log_error(f"Failed to send make command for order {order.id}: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
             return HttpResponse(status=503)
 

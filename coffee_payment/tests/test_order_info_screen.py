@@ -318,7 +318,7 @@ class InitiatePaymentTests(OrderInfoScreenTestCase):
         order.refresh_from_db()
         
         self.assertEqual(order.status, 'pending')
-        self.assertEqual(order.external_order_id, 'test-payment-id-123')
+        self.assertEqual(order.payment_reference_id, 'test-payment-id-123')
     
     def test_expired_order_returns_400_with_error_message(self):
         """Test expired order returns 400 response with appropriate error message."""

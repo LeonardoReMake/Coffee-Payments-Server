@@ -49,12 +49,12 @@ class OrderValidationService:
         return True, None
     
     @staticmethod
-    def check_order_existence(order_uuid: str) -> Tuple[bool, Optional[str], Optional[Order]]:
+    def check_order_existence(order_id: str) -> Tuple[bool, Optional[str], Optional[Order]]:
         """
         Checks if order exists and validates its state.
         
         Args:
-            order_uuid: UUID of the order to check
+            order_id: Machine-generated order ID (string format)
             
         Returns:
             Tuple of (should_create_new, error_message, existing_order)
@@ -62,13 +62,13 @@ class OrderValidationService:
             - error_message: Error message key if order is invalid
             - existing_order: Order instance if exists and valid, None otherwise
         """
-        logger.info(f"[check_order_existence] Checking order existence. order_uuid={order_uuid}")
+        logger.info(f"[check_order_existence] Checking order existence. order_id={order_id}")
         
         try:
-            order = Order.objects.get(id=order_uuid)
+            order = Order.objects.get(id=order_id)
             logger.info(
                 f"[check_order_existence] Order found. "
-                f"order_uuid={order_uuid}, status={order.status}, "
+                f"order_id={order_id}, status={order.status}, "
                 f"expires_at={order.expires_at}"
             )
             
@@ -76,7 +76,7 @@ class OrderValidationService:
             if order.is_expired():
                 logger.warning(
                     f"[check_order_existence] Order has expired. "
-                    f"order_uuid={order_uuid}, expires_at={order.expires_at}, "
+                    f"order_id={order_id}, expires_at={order.expires_at}, "
                     f"current_time={timezone.now()}"
                 )
                 return False, ERROR_MESSAGES['order_expired'], None
@@ -85,21 +85,21 @@ class OrderValidationService:
             if order.status == 'created':
                 logger.info(
                     f"[check_order_existence] Valid existing order found. "
-                    f"order_uuid={order_uuid}, will not create new order"
+                    f"order_id={order_id}, will not create new order"
                 )
                 return False, None, order
             
             # Order exists but in different status
             logger.info(
                 f"[check_order_existence] Order exists with status '{order.status}'. "
-                f"order_uuid={order_uuid}, will create new order"
+                f"order_id={order_id}, will create new order"
             )
             return True, None, None
             
         except Order.DoesNotExist:
             logger.info(
                 f"[check_order_existence] Order not found. "
-                f"order_uuid={order_uuid}, will create new order"
+                f"order_id={order_id}, will create new order"
             )
             return True, None, None
     
@@ -198,7 +198,7 @@ class OrderValidationService:
     def execute_validation_chain(
         request_params: dict,
         device_uuid: str,
-        order_uuid: str
+        order_id: str
     ) -> Dict[str, Any]:
         """
         Executes complete validation chain with early termination.
@@ -211,7 +211,7 @@ class OrderValidationService:
         Args:
             request_params: All request parameters for hash validation
             device_uuid: UUID of the device
-            order_uuid: UUID of the order
+            order_id: Machine-generated order ID (string format)
             
         Returns:
             Dictionary with validation results:
@@ -224,7 +224,7 @@ class OrderValidationService:
         """
         logger.info(
             f"[execute_validation_chain] Starting validation chain. "
-            f"device_uuid={device_uuid}, order_uuid={order_uuid}, "
+            f"device_uuid={device_uuid}, order_id={order_id}, "
             f"request_params={list(request_params.keys())}"
         )
         
@@ -233,7 +233,7 @@ class OrderValidationService:
         if not hash_valid:
             logger.warning(
                 f"[execute_validation_chain] Validation chain terminated: hash validation failed. "
-                f"order_uuid={order_uuid}"
+                f"order_id={order_id}"
             )
             return {
                 'valid': False,
@@ -243,11 +243,11 @@ class OrderValidationService:
             }
         
         # Step 2: Order existence check
-        should_create_new, order_error, existing_order = OrderValidationService.check_order_existence(order_uuid)
+        should_create_new, order_error, existing_order = OrderValidationService.check_order_existence(order_id)
         if order_error:
             logger.warning(
                 f"[execute_validation_chain] Validation chain terminated: order validation failed. "
-                f"order_uuid={order_uuid}, error={order_error}"
+                f"order_id={order_id}, error={order_error}"
             )
             return {
                 'valid': False,
@@ -273,7 +273,7 @@ class OrderValidationService:
         # All validations passed
         logger.info(
             f"[execute_validation_chain] Validation chain completed successfully. "
-            f"device_uuid={device_uuid}, order_uuid={order_uuid}, "
+            f"device_uuid={device_uuid}, order_id={order_id}, "
             f"should_create_new_order={should_create_new}"
         )
         
