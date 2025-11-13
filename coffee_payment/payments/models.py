@@ -49,6 +49,11 @@ class Device(models.Model):
         blank=True,
         help_text='Custom information displayed to customers on order screen'
     )
+    client_error_info = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Custom information displayed to customers on error screens (e.g., support contact)'
+    )
 
     def clean(self):
         from django.conf import settings

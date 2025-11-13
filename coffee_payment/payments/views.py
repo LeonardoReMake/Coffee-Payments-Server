@@ -11,11 +11,31 @@ from payments.services.yookassa_service import create_payment
 from django.views.decorators.csrf import csrf_exempt
 from payments.services.tmetr_service import TmetrService
 
-def render_error_page(message, status_code):
+def render_error_page(message, status_code, device=None):
     """
     Renders an error page with the given message and HTTP status code.
+    
+    Args:
+        message (str): User-friendly error message from ERROR_MESSAGES
+        status_code (int): HTTP status code (400, 403, 404, 503, etc.)
+        device (Device, optional): Device object for displaying merchant branding
+    
+    Returns:
+        HttpResponse: Rendered error page
     """
-    context = {'error_message': message, 'status_code': status_code}
+    # Log error page render with device information
+    log_error(
+        f"Error page displayed: {message}. Device: {device.device_uuid if device else 'N/A'}",
+        'render_error_page',
+        'ERROR'
+    )
+    
+    context = {
+        'error_message': message,
+        'status_code': status_code,
+        'logo_url': device.logo_url if device else None,
+        'client_error_info': device.client_error_info if device else None,
+    }
     return render(None, 'payments/error_page.html', context, status=status_code)
 
 def tbank_payment_proccessign(request):
@@ -179,10 +199,11 @@ def process_payment_flow(request):
         )
     except Http404 as e:
         log_error(f'Device not found: {device_uuid}', 'process_payment_flow', 'ERROR')
-        return render_error_page(ERROR_MESSAGES['device_not_found'], 404)
+        return render_error_page(ERROR_MESSAGES['device_not_found'], 404, device=None)
     except ValueError as e:
         log_error(f'Merchant validation failed: {str(e)}', 'process_payment_flow', 'FORBIDDEN')
-        return render_error_page(ERROR_MESSAGES['merchant_expired'], 403)
+        # Device exists but merchant validation failed, so we can pass device for branding
+        return render_error_page(ERROR_MESSAGES['merchant_expired'], 403, device=device)
 
     # Get drink information from Tmetr API
     tmetr_service = TmetrService()
@@ -200,10 +221,10 @@ def process_payment_flow(request):
         )
     except requests.RequestException as e:
         log_error(f'Tmetr API request failed: {str(e)}', 'process_payment_flow', 'ERROR')
-        return render_error_page(ERROR_MESSAGES['service_unavailable'], 503)
+        return render_error_page(ERROR_MESSAGES['service_unavailable'], 503, device=device)
     except Exception as e:
         log_error(f'Error while getting drink information: {str(e)}', 'process_payment_flow', 'ERROR')
-        return render_error_page(ERROR_MESSAGES['service_unavailable'], 503)
+        return render_error_page(ERROR_MESSAGES['service_unavailable'], 503, device=device)
 
     # Extract drink price from API response
     drink_price = drink_details.get('price', 5000) if drink_details is not None else 5000
@@ -253,7 +274,7 @@ def process_payment_flow(request):
                 'process_payment_flow',
                 'ERROR'
             )
-            return render_error_page(ERROR_MESSAGES['invalid_order_id'], 400)
+            return render_error_page(ERROR_MESSAGES['invalid_order_id'], 400, device=device)
     else:
         # Use existing valid order from validation chain
         order = validation_result['existing_order']
@@ -285,13 +306,13 @@ def process_payment_flow(request):
             order.status = 'failed'
             order.save()
             log_error(f"Failed to execute payment scenario for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'process_payment_flow', 'ERROR')
-            return render_error_page(ERROR_MESSAGES['missing_credentials'], 503)
+            return render_error_page(ERROR_MESSAGES['missing_credentials'], 503, device=device)
         except Exception as e:
             # Other errors during payment processing
             order.status = 'failed'
             order.save()
             log_error(f"Failed to process payment for order {order.id}: {str(e)}. Scenario: {device.payment_scenario}, Merchant: {merchant.id}", 'process_payment_flow', 'ERROR')
-            return render_error_page(ERROR_MESSAGES['service_unavailable'], 503)
+            return render_error_page(ERROR_MESSAGES['service_unavailable'], 503, device=device)
 
 @csrf_exempt
 def yookassa_payment_result_webhook(request):

@@ -1,13 +1,207 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error - {{ status_code }}</title>
+    <title>Ошибка</title>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        
+        /* Container - Mobile First */
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            max-width: 480px;
+            width: 100%;
+        }
+        
+        /* Logo Section */
+        .logo-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .logo-image {
+            max-width: 120px;
+            max-height: 120px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        /* Error Section */
+        .error-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .error-icon {
+            font-size: 48px;
+            color: #e74c3c;
+            margin-bottom: 16px;
+        }
+        
+        .error-section h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        /* Client Error Info Section */
+        .client-error-info {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 16px;
+            border-radius: 4px;
+        }
+        
+        .client-error-info p {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            margin: 0;
+        }
+        
+        /* Tablet Styles (768px and up) */
+        @media (min-width: 768px) {
+            body {
+                padding: 32px;
+            }
+            
+            .container {
+                padding: 32px;
+                max-width: 560px;
+            }
+            
+            .logo-image {
+                max-width: 150px;
+                max-height: 150px;
+            }
+            
+            .error-icon {
+                font-size: 56px;
+            }
+            
+            .error-section h1 {
+                font-size: 28px;
+                margin-bottom: 20px;
+            }
+            
+            .error-message {
+                font-size: 17px;
+            }
+            
+            .client-error-info {
+                padding: 20px;
+            }
+            
+            .client-error-info p {
+                font-size: 15px;
+            }
+        }
+        
+        /* Desktop Styles (1024px and up) */
+        @media (min-width: 1024px) {
+            .container {
+                padding: 40px;
+                max-width: 600px;
+            }
+            
+            .logo-image {
+                max-width: 180px;
+                max-height: 180px;
+            }
+            
+            .error-icon {
+                font-size: 64px;
+            }
+            
+            .error-section h1 {
+                font-size: 32px;
+                margin-bottom: 24px;
+            }
+            
+            .error-message {
+                font-size: 18px;
+            }
+            
+            .client-error-info {
+                padding: 24px;
+            }
+            
+            .client-error-info p {
+                font-size: 16px;
+            }
+        }
+        
+        /* Accessibility - High Contrast Support */
+        @media (prefers-contrast: high) {
+            .container {
+                border: 2px solid #000;
+            }
+            
+            .client-error-info {
+                border-left-width: 6px;
+            }
+        }
+        
+        /* Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Error {{ status_code }}</h1>
-    <p>{{ error_message }}</p>
-    <a href="/">Go to Home</a>
+    <div class="container">
+        <!-- Logo Section (displayed when available) -->
+        {% if logo_url %}
+        <div class="logo-section">
+            <img src="{{ logo_url }}" alt="Логотип" class="logo-image" onerror="this.style.display='none'">
+        </div>
+        {% endif %}
+        
+        <!-- Error Section -->
+        <div class="error-section">
+            <div class="error-icon">&#9888;</div>
+            <h1>Ошибка</h1>
+            <p class="error-message">{{ error_message }}</p>
+        </div>
+        
+        <!-- Client Error Info Section (displayed when available) -->
+        {% if client_error_info %}
+        <div class="client-error-info">
+            <p>{{ client_error_info }}</p>
+        </div>
+        {% endif %}
+    </div>
 </body>
 </html>
