@@ -257,6 +257,7 @@ def process_payment_flow(request):
             order = Order.objects.create(
                 id=order_uuid,
                 drink_name=drink_name,
+                drink_number=drink_number,
                 device=device,
                 merchant=merchant,
                 size=drink_size_int,
@@ -367,7 +368,6 @@ def yookassa_payment_result_webhook(request):
 
     # Только для успешных платежей продолжаем отправку команды в Tmetr API
     if event_type == 'payment.succeeded':
-        #TODO: получить для устройства конфигурацию для подключения до mqtt и отправить сообщение для приготовления
         drink_number = event_json['object']['metadata']['drink_number']
         order_uuid = event_json['object']['metadata']['order_uuid']
         drink_size = event_json['object']['metadata']['size']
@@ -569,7 +569,7 @@ def initiate_payment(request):
     drink_details = {
         'price': int(order.price),  # Price in kopecks
         'name': order.drink_name,
-        'drink_id': 'unknown',  # We don't have this stored in Order
+        'drink_id': order.drink_number if order.drink_number else 'unknown',
     }
     
     # Execute payment scenario

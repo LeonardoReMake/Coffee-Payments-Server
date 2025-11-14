@@ -98,6 +98,12 @@ class Order(models.Model):
         help_text='Payment system reference ID (e.g., Yookassa payment_id)'
     )
     drink_name = models.CharField(max_length=255)  # Replace ForeignKey with CharField for drink name
+    drink_number = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text='Drink ID at the device (drinkNo from QR code)'
+    )
     device = models.ForeignKey(
         Device, on_delete=models.CASCADE, related_name="orders"
     )  # Связь с Device
