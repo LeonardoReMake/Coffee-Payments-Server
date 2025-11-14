@@ -141,11 +141,16 @@ class PaymentScenarioService:
         )
         
         try:
+            # Build return URL to order status page
+            from django.conf import settings
+            domain = getattr(settings, 'DOMAIN', 'localhost:8000')
+            return_url = f"https://{domain}/v1/order-status-page?order_id={order_uuid}"
+            
             # Create payment with merchant-specific credentials
             payment = yookassa_service.create_payment(
                 amount=drink_price / 100,
                 description=f'Оплата напитка: {drink_name}',
-                return_url="https://google.com",
+                return_url=return_url,
                 drink_no=drink_number,
                 order_uuid=order_uuid,
                 size=drink_size,
@@ -216,11 +221,17 @@ class PaymentScenarioService:
         )
         
         try:
+            # Build success URL to order status page
+            from django.conf import settings
+            domain = getattr(settings, 'DOMAIN', 'localhost:8000')
+            success_url = f"https://{domain}/v1/order-status-page?order_id={order.id}"
+            
             # Prepare payment data for TBank
             payment_data = {
                 'Amount': drink_price,
                 'OrderId': str(order.id),
                 'Description': f'Оплата напитка: {drink_name}',
+                'SuccessURL': success_url,
             }
             
             # Process payment with merchant-specific credentials

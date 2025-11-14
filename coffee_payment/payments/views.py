@@ -632,3 +632,102 @@ def render_receipt_data(request, device, drink_name, drink_price, drink_size, co
         'company_name': company_name
     }
     return render(request, 'payments/receipt_data_form.html', context)
+
+
+@csrf_exempt
+def get_order_status(request, order_id):
+    """
+    API endpoint to retrieve order status for polling.
+    
+    Args:
+        request: HttpRequest object
+        order_id: Order ID from URL parameter
+    
+    Returns:
+        JsonResponse with order data or error message
+    """
+    from django.http import JsonResponse
+    from payments.user_messages import ERROR_MESSAGES
+    
+    try:
+        order = Order.objects.select_related('device').get(id=order_id)
+    except Order.DoesNotExist:
+        log_error(f"Order not found: {order_id}", 'get_order_status', 'ERROR')
+        return JsonResponse(
+            {'error': ERROR_MESSAGES['order_not_found']},
+            status=404
+        )
+    
+    # Size mapping
+    SIZE_LABELS = {1: 'маленький', 2: 'средний', 3: 'большой'}
+    
+    # Log successful request
+    log_info(
+        f"Order status retrieved for order {order_id}. Status: {order.status}",
+        'get_order_status'
+    )
+    
+    # Prepare response data
+    data = {
+        'order_id': order.id,
+        'status': order.status,
+        'drink_name': order.drink_name,
+        'drink_size': SIZE_LABELS.get(order.size, 'неизвестный размер'),
+        'price': float(order.price / 100),  # Convert kopecks to rubles
+        'device': {
+            'location': order.device.location,
+            'logo_url': order.device.logo_url,
+            'client_info_pending': order.device.client_info_pending,
+            'client_info_paid': order.device.client_info_paid,
+            'client_info_not_paid': order.device.client_info_not_paid,
+            'client_info_make_pending': order.device.client_info_make_pending,
+            'client_info_successful': order.device.client_info_successful,
+        }
+    }
+    
+    return JsonResponse(data, status=200)
+
+
+def show_order_status_page(request):
+    """
+    Render the order status tracking page.
+    
+    Args:
+        request: HttpRequest object with order_id query parameter
+    
+    Returns:
+        HttpResponse with rendered order_status_page.html template
+    """
+    from payments.user_messages import ERROR_MESSAGES
+    
+    order_id = request.GET.get('order_id')
+    
+    if not order_id:
+        log_error(
+            "Missing order_id parameter in order status page request",
+            'show_order_status_page',
+            'ERROR'
+        )
+        return render_error_page(ERROR_MESSAGES['missing_order_id'], 400)
+    
+    # Verify order exists before rendering page
+    try:
+        order = Order.objects.select_related('device').get(id=order_id)
+    except Order.DoesNotExist:
+        log_error(
+            f"Order not found: {order_id}",
+            'show_order_status_page',
+            'ERROR'
+        )
+        return render_error_page(ERROR_MESSAGES['order_not_found'], 404)
+    
+    log_info(
+        f"Rendering order status page for Order {order_id}",
+        'show_order_status_page'
+    )
+    
+    context = {
+        'order_id': order_id
+    }
+    
+    return render(request, 'payments/order_status_page.html', context)

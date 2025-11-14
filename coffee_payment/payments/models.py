@@ -54,6 +54,31 @@ class Device(models.Model):
         blank=True,
         help_text='Custom information displayed to customers on error screens. Supports HTML formatting (e.g., <a href="tel:+1234567890">Call support</a>)'
     )
+    client_info_pending = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Information displayed to customers when order status is pending. Supports HTML formatting.'
+    )
+    client_info_paid = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Information displayed to customers when order status is paid. Supports HTML formatting.'
+    )
+    client_info_not_paid = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Information displayed to customers when order status is not_paid. Supports HTML formatting.'
+    )
+    client_info_make_pending = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Information displayed to customers when order status is make_pending. Supports HTML formatting.'
+    )
+    client_info_successful = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Information displayed to customers when order status is successful. Supports HTML formatting.'
+    )
 
     def clean(self):
         from django.conf import settings

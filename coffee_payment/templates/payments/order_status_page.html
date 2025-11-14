@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статус заказа</title>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        
+        /* Container - Mobile First */
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            max-width: 480px;
+            width: 100%;
+        }
+        
+        /* Logo Section */
+        .logo-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .logo-image {
+            max-width: 120px;
+            max-height: 120px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        /* Order Information */
+        .order-info {
+            margin-bottom: 24px;
+        }
+        
+        .order-info h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-row .label {
+            font-size: 16px;
+            color: #666;
+            font-weight: 400;
+        }
+        
+        .info-row .value {
+            font-size: 16px;
+            color: #1a1a1a;
+            font-weight: 500;
+            text-align: right;
+        }
+        
+        /* Price Row - Emphasized */
+        .price-row {
+            margin-top: 8px;
+            padding-top: 16px;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .price-row .label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        
+        .price-row .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2c5f2d;
+        }
+        
+        /* Status Section */
+        .status-section {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        
+        .status-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .status-description {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+        
+        /* Client Info Section */
+        .client-info {
+            background-color: #f9f9f9;
+            border-left: 4px solid #4a90e2;
+            padding: 16px;
+            margin-bottom: 24px;
+            border-radius: 4px;
+        }
+        
+        .client-info p {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            margin: 0;
+        }
+        
+        /* Spinner Animation */
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4a90e2;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Success Icon */
+        .success-icon {
+            color: #2c5f2d;
+        }
+        
+        /* Error Icon */
+        .error-icon {
+            color: #e74c3c;
+        }
+        
+        /* Retry Payment Button */
+        .retry-btn {
+            width: 100%;
+            min-height: 48px;
+            background-color: #e74c3c;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+            margin-bottom: 16px;
+        }
+        
+        .retry-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .retry-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .retry-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        /* Loading State */
+        #loading-state {
+            text-align: center;
+            padding: 24px;
+        }
+        
+        #loading-state p {
+            font-size: 16px;
+            color: #666;
+        }
+        
+        /* Error State */
+        #error-state {
+            text-align: center;
+            padding: 24px;
+        }
+        
+        .error-message {
+            background-color: #fee;
+            border: 1px solid #fcc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            color: #c33;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        #error-state button {
+            width: 100%;
+            min-height: 48px;
+            background-color: #4a90e2;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        #error-state button:hover {
+            background-color: #3a7bc8;
+        }
+        
+        /* Hidden Elements */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Smooth Transitions */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Tablet Styles (768px and up) */
+        @media (min-width: 768px) {
+            body {
+                padding: 32px;
+            }
+            
+            .container {
+                padding: 32px;
+                max-width: 560px;
+            }
+            
+            .logo-image {
+                max-width: 150px;
+                max-height: 150px;
+            }
+            
+            .order-info h1 {
+                font-size: 28px;
+                margin-bottom: 24px;
+            }
+            
+            .info-row {
+                padding: 14px 0;
+            }
+            
+            .info-row .label {
+                font-size: 17px;
+            }
+            
+            .info-row .value {
+                font-size: 17px;
+            }
+            
+            .price-row .label {
+                font-size: 20px;
+            }
+            
+            .price-row .value {
+                font-size: 24px;
+            }
+            
+            .status-description {
+                font-size: 20px;
+            }
+            
+            .client-info {
+                padding: 20px;
+            }
+            
+            .client-info p {
+                font-size: 15px;
+            }
+            
+            .retry-btn {
+                min-height: 52px;
+                font-size: 19px;
+            }
+        }
+        
+        /* Desktop Styles (1024px and up) */
+        @media (min-width: 1024px) {
+            .container {
+                padding: 40px;
+                max-width: 600px;
+            }
+            
+            .logo-image {
+                max-width: 180px;
+                max-height: 180px;
+            }
+            
+            .order-info h1 {
+                font-size: 32px;
+                margin-bottom: 28px;
+            }
+            
+            .info-row {
+                padding: 16px 0;
+            }
+            
+            .info-row .label {
+                font-size: 18px;
+            }
+            
+            .info-row .value {
+                font-size: 18px;
+            }
+            
+            .price-row .label {
+                font-size: 22px;
+            }
+            
+            .price-row .value {
+                font-size: 26px;
+            }
+            
+            .status-description {
+                font-size: 22px;
+            }
+            
+            .client-info {
+                padding: 24px;
+            }
+            
+            .client-info p {
+                font-size: 16px;
+            }
+            
+            .retry-btn {
+                min-height: 56px;
+                font-size: 20px;
+            }
+            
+            .retry-btn:hover {
+                box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4);
+            }
+        }
+        
+        /* Accessibility - High Contrast Support */
+        @media (prefers-contrast: high) {
+            .info-row {
+                border-bottom: 2px solid #000;
+            }
+            
+            .retry-btn {
+                border: 2px solid #000;
+            }
+        }
+        
+        /* Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+            .spinner {
+                animation: none;
+                border-top-color: #4a90e2;
+            }
+            
+            .retry-btn {
+                transition: none;
+            }
+            
+            .fade-in {
+                animation: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Loading State (Initial) -->
+        <div id="loading-state">
+            <div class="spinner"></div>
+            <p>Загрузка информации о заказе...</p>
+        </div>
+        
+        <!-- Order Content (Hidden initially) -->
+        <div id="order-content" class="hidden">
+            <!-- Logo Section -->
+            <div id="logo-section" class="logo-section hidden">
+                <img id="logo-image" src="" alt="Логотип" class="logo-image">
+            </div>
+            
+            <!-- Order Information -->
+            <div class="order-info">
+                <h1>Ваш заказ</h1>
+                
+                <div class="info-row">
+                    <span class="label">Адрес:</span>
+                    <span id="location" class="value"></span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="label">Напиток:</span>
+                    <span id="drink-name" class="value"></span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="label">Размер:</span>
+                    <span id="drink-size" class="value"></span>
+                </div>
+                
+                <div class="info-row price-row">
+                    <span class="label">Цена:</span>
+                    <span id="price" class="value"></span>
+                </div>
+            </div>
+            
+            <!-- Status Section -->
+            <div class="status-section">
+                <div id="status-icon" class="status-icon"></div>
+                <div id="status-description" class="status-description"></div>
+            </div>
+            
+            <!-- Client Info Section -->
+            <div id="client-info-section" class="client-info hidden">
+                <p id="client-info-text"></p>
+            </div>
+            
+            <!-- Retry Payment Button (for not_paid status) -->
+            <button id="retry-btn" class="retry-btn hidden">
+                Повторить оплату
+            </button>
+        </div>
+        
+        <!-- Error State -->
+        <div id="error-state" class="hidden">
+            <p class="error-message" id="error-message"></p>
+            <button onclick="retryFetch()">Попробовать снова</button>
+        </div>
+        
+        <!-- Hidden order_id for JavaScript access -->
+        <input type="hidden" id="order-id" value="{{ order_id }}">
+    </div>
+    
+    <script>
+        // Global variables
+        let pollingInterval = null;
+        let currentStatus = null;
+        
+        // Status descriptions
+        const STATUS_DESCRIPTIONS = {
+            'pending': 'Проверяем оплату заказа...',
+            'paid': 'Заказ успешно оплачен, начинаем готовить',
+            'not_paid': 'Оплата не прошла',
+            'make_pending': 'Готовим напиток...',
+            'successful': 'Напиток готов',
+            'failed': 'Произошла ошибка при обработке заказа'
+        };
+        
+        /**
+         * Get CSRF token from cookies
+         */
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        /**
+         * Fetch order status from API
+         */
+        async function fetchOrderStatus(orderId) {
+            const response = await fetch(`/v1/order-status/${orderId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch order status');
+            }
+            return await response.json();
+        }
+        
+        /**
+         * Update UI based on order status
+         */
+        function updateUI(orderData) {
+            // Update order information
+            document.getElementById('location').textContent = orderData.device.location;
+            document.getElementById('drink-name').textContent = orderData.drink_name;
+            document.getElementById('drink-size').textContent = orderData.drink_size;
+            document.getElementById('price').textContent = `${orderData.price} ₽`;
+            
+            // Update logo if available
+            if (orderData.device.logo_url) {
+                document.getElementById('logo-image').src = orderData.device.logo_url;
+                document.getElementById('logo-section').classList.remove('hidden');
+            } else {
+                document.getElementById('logo-section').classList.add('hidden');
+            }
+            
+            // Update status-specific display
+            const statusIcon = document.getElementById('status-icon');
+            const statusDescription = document.getElementById('status-description');
+            const clientInfoSection = document.getElementById('client-info-section');
+            const clientInfoText = document.getElementById('client-info-text');
+            const retryBtn = document.getElementById('retry-btn');
+            
+            // Set status description
+            statusDescription.textContent = STATUS_DESCRIPTIONS[orderData.status] || 'Обработка заказа...';
+            
+            // Set status icon and client info based on status
+            switch (orderData.status) {
+                case 'pending':
+                    statusIcon.innerHTML = '<div class="spinner"></div>';
+                    if (orderData.device.client_info_pending) {
+                        clientInfoText.innerHTML = orderData.device.client_info_pending;
+                        clientInfoSection.classList.remove('hidden');
+                    } else {
+                        clientInfoSection.classList.add('hidden');
+                    }
+                    retryBtn.classList.add('hidden');
+                    break;
+                    
+                case 'paid':
+                    statusIcon.innerHTML = '✓';
+                    statusIcon.className = 'status-icon success-icon';
+                    if (orderData.device.client_info_paid) {
+                        clientInfoText.innerHTML = orderData.device.client_info_paid;
+                        clientInfoSection.classList.remove('hidden');
+                    } else {
+                        clientInfoSection.classList.add('hidden');
+                    }
+                    retryBtn.classList.add('hidden');
+                    break;
+                    
+                case 'not_paid':
+                    statusIcon.innerHTML = '⚠';
+                    statusIcon.className = 'status-icon error-icon';
+                    if (orderData.device.client_info_not_paid) {
+                        clientInfoText.innerHTML = orderData.device.client_info_not_paid;
+                        clientInfoSection.classList.remove('hidden');
+                    } else {
+                        clientInfoSection.classList.add('hidden');
+                    }
+                    retryBtn.classList.remove('hidden');
+                    break;
+                    
+                case 'make_pending':
+                    statusIcon.innerHTML = '<div class="spinner"></div>';
+                    if (orderData.device.client_info_make_pending) {
+                        clientInfoText.innerHTML = orderData.device.client_info_make_pending;
+                        clientInfoSection.classList.remove('hidden');
+                    } else {
+                        clientInfoSection.classList.add('hidden');
+                    }
+                    retryBtn.classList.add('hidden');
+                    break;
+                    
+                case 'successful':
+                    statusIcon.innerHTML = '✓';
+                    statusIcon.className = 'status-icon success-icon';
+                    if (orderData.device.client_info_successful) {
+                        clientInfoText.innerHTML = orderData.device.client_info_successful;
+                        clientInfoSection.classList.remove('hidden');
+                    } else {
+                        clientInfoSection.classList.add('hidden');
+                    }
+                    retryBtn.classList.add('hidden');
+                    break;
+                    
+                case 'failed':
+                    statusIcon.innerHTML = '⚠';
+                    statusIcon.className = 'status-icon error-icon';
+                    clientInfoSection.classList.add('hidden');
+                    retryBtn.classList.add('hidden');
+                    break;
+                    
+                default:
+                    statusIcon.innerHTML = '?';
+                    statusIcon.className = 'status-icon';
+                    clientInfoSection.classList.add('hidden');
+                    retryBtn.classList.add('hidden');
+            }
+            
+            // Apply fade-in animation
+            document.getElementById('order-content').classList.add('fade-in');
+            
+            // Update current status
+            currentStatus = orderData.status;
+        }
+        
+        /**
+         * Start status polling
+         */
+        function startPolling(orderId) {
+            pollingInterval = setInterval(async () => {
+                try {
+                    const data = await fetchOrderStatus(orderId);
+                    updateUI(data);
+                    
+                    // Stop polling for terminal statuses
+                    if (['successful', 'not_paid', 'failed'].includes(data.status)) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        console.log('Polling stopped for terminal status:', data.status);
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    // Continue polling even on error
+                }
+            }, 1000);
+        }
+        
+        /**
+         * Show error state
+         */
+        function showError(message) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('order-content').classList.add('hidden');
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-state').classList.remove('hidden');
+        }
+        
+        /**
+         * Retry fetching order data
+         */
+        function retryFetch() {
+            document.getElementById('error-state').classList.add('hidden');
+            document.getElementById('loading-state').classList.remove('hidden');
+            initializePage();
+        }
+        
+        /**
+         * Retry payment (for not_paid status)
+         */
+        async function retryPayment() {
+            const orderId = document.getElementById('order-id').value;
+            const retryBtn = document.getElementById('retry-btn');
+            
+            // Disable button
+            retryBtn.disabled = true;
+            retryBtn.textContent = 'Создание платежа...';
+            
+            try {
+                const csrfToken = getCookie('csrftoken');
+                
+                const response = await fetch('/v1/initiate-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        order_id: orderId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.redirect_url) {
+                    // Redirect to payment page
+                    window.location.href = data.redirect_url;
+                } else {
+                    // Show error
+                    alert(data.error || 'Произошла ошибка при создании платежа. Пожалуйста, попробуйте снова.');
+                    retryBtn.disabled = false;
+                    retryBtn.textContent = 'Повторить оплату';
+                }
+            } catch (error) {
+                console.error('Payment retry error:', error);
+                alert('Не удалось связаться с сервером. Пожалуйста, проверьте подключение к интернету и попробуйте снова.');
+                retryBtn.disabled = false;
+                retryBtn.textContent = 'Повторить оплату';
+            }
+        }
+        
+        /**
+         * Initialize page
+         */
+        async function initializePage() {
+            const orderId = document.getElementById('order-id').value;
+            
+            try {
+                // Fetch initial order data
+                const data = await fetchOrderStatus(orderId);
+                
+                // Hide loading state
+                document.getElementById('loading-state').classList.add('hidden');
+                
+                // Show order content
+                document.getElementById('order-content').classList.remove('hidden');
+                
+                // Update UI
+                updateUI(data);
+                
+                // Start polling if not in terminal status
+                if (!['successful', 'not_paid', 'failed'].includes(data.status)) {
+                    startPolling(orderId);
+                }
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError('Не удалось загрузить информацию о заказе. Пожалуйста, попробуйте снова.');
+            }
+        }
+        
+        // Initialize page on load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            
+            // Attach retry payment handler
+            document.getElementById('retry-btn').addEventListener('click', retryPayment);
+        });
+    </script>
+</body>
+</html>

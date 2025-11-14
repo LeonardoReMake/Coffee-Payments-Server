@@ -16,7 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from payments.views import process_payment, process_payment_flow, yookassa_payment_result_webhook, initiate_payment
+from payments.views import (
+    process_payment, 
+    process_payment_flow, 
+    yookassa_payment_result_webhook, 
+    initiate_payment,
+    show_order_status_page,
+    get_order_status
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -34,4 +41,8 @@ urlpatterns = [
     
     # Webhook endpoints
     path('v1/yook-pay-webhook', yookassa_payment_result_webhook, name='yookassa_payment_result_webhook'),
+    
+    # Order status page endpoints
+    path('v1/order-status-page', show_order_status_page, name='order_status_page'),
+    path('v1/order-status/<str:order_id>', get_order_status, name='get_order_status'),
 ]
