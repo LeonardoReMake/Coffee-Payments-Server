@@ -143,7 +143,7 @@ class PaymentScenarioService:
         try:
             # Build return URL to order status page
             from django.conf import settings
-            domain = getattr(settings, 'DOMAIN', 'localhost:8000')
+            domain = settings.BASE_URL
             return_url = f"https://{domain}/v1/order-status-page?order_id={order_uuid}"
             
             # Create payment with merchant-specific credentials
@@ -223,7 +223,7 @@ class PaymentScenarioService:
         try:
             # Build success URL to order status page
             from django.conf import settings
-            domain = getattr(settings, 'DOMAIN', 'localhost:8000')
+            domain = settings.BASE_URL
             success_url = f"https://{domain}/v1/order-status-page?order_id={order.id}"
             
             # Prepare payment data for TBank
