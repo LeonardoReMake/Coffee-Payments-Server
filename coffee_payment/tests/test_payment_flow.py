@@ -147,11 +147,9 @@ class SuccessfulScenariosTests(ProcessPaymentFlowTestCase):
         
         response = process_payment_flow(request)
         
-        # Verify response is successful and renders order info screen
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Cappuccino', response.content)
-        self.assertIn(b'Test Location Yookassa', response.content)
-        self.assertIn(b'50.0', response.content)  # Price in rubles
+        # Verify response redirects to unified status page
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith('/v1/order-status-page?order_id='))
         
         # Verify Order was created with correct status
         order = Order.objects.filter(
@@ -193,11 +191,9 @@ class SuccessfulScenariosTests(ProcessPaymentFlowTestCase):
         
         response = process_payment_flow(request)
         
-        # Verify response is successful and renders order info screen
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Latte', response.content)
-        self.assertIn(b'Test Location TBank', response.content)
-        self.assertIn(b'75.0', response.content)  # Price in rubles
+        # Verify response redirects to unified status page
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith('/v1/order-status-page?order_id='))
         
         # Verify Order was created with correct status
         order = Order.objects.filter(

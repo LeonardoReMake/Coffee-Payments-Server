@@ -165,6 +165,36 @@
             color: #e74c3c;
         }
         
+        /* Payment Button (for status=created) */
+        .payment-btn {
+            width: 100%;
+            min-height: 48px;
+            background-color: #4a90e2;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 2px 4px rgba(74, 144, 226, 0.3);
+            margin-bottom: 16px;
+        }
+        
+        .payment-btn:hover {
+            background-color: #3a7bc8;
+        }
+        
+        .payment-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .payment-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
         /* Retry Payment Button */
         .retry-btn {
             width: 100%;
@@ -308,6 +338,11 @@
                 font-size: 15px;
             }
             
+            .payment-btn {
+                min-height: 52px;
+                font-size: 19px;
+            }
+            
             .retry-btn {
                 min-height: 52px;
                 font-size: 19px;
@@ -363,6 +398,15 @@
                 font-size: 16px;
             }
             
+            .payment-btn {
+                min-height: 56px;
+                font-size: 20px;
+            }
+            
+            .payment-btn:hover {
+                box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
+            }
+            
             .retry-btn {
                 min-height: 56px;
                 font-size: 20px;
@@ -379,6 +423,10 @@
                 border-bottom: 2px solid #000;
             }
             
+            .payment-btn {
+                border: 2px solid #000;
+            }
+            
             .retry-btn {
                 border: 2px solid #000;
             }
@@ -389,6 +437,10 @@
             .spinner {
                 animation: none;
                 border-top-color: #4a90e2;
+            }
+            
+            .payment-btn {
+                transition: none;
             }
             
             .retry-btn {
@@ -452,6 +504,16 @@
                 <p id="client-info-text"></p>
             </div>
             
+            <!-- Expiration Warning -->
+            <div id="expiration-warning" class="error-message hidden">
+                Время действия заказа истекло. Пожалуйста, отсканируйте QR-код снова.
+            </div>
+            
+            <!-- Payment Button (for created status) -->
+            <button id="payment-btn" class="payment-btn hidden">
+                Перейти к оплате
+            </button>
+            
             <!-- Retry Payment Button (for not_paid status) -->
             <button id="retry-btn" class="retry-btn hidden">
                 Повторить оплату
@@ -475,6 +537,7 @@
         
         // Status descriptions
         const STATUS_DESCRIPTIONS = {
+            'created': 'Подтвердите заказ для оплаты',
             'pending': 'Проверяем оплату заказа...',
             'paid': 'Заказ успешно оплачен, начинаем готовить',
             'not_paid': 'Оплата не прошла',
@@ -513,9 +576,41 @@
         }
         
         /**
+         * Check if order has expired
+         */
+        function checkOrderExpiration(expiresAt) {
+            const now = new Date();
+            const expirationDate = new Date(expiresAt);
+            
+            if (now > expirationDate) {
+                return true;
+            }
+            return false;
+        }
+        
+        /**
          * Update UI based on order status
          */
         function updateUI(orderData) {
+            // Check if order has expired
+            const isExpired = checkOrderExpiration(orderData.expires_at);
+            const expirationWarning = document.getElementById('expiration-warning');
+            
+            if (isExpired) {
+                // Show expiration warning
+                expirationWarning.classList.remove('hidden');
+                
+                // Stop polling if active
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                    console.log('Polling stopped due to order expiration');
+                }
+            } else {
+                // Hide expiration warning
+                expirationWarning.classList.add('hidden');
+            }
+            
             // Update order information
             document.getElementById('location').textContent = orderData.device.location;
             document.getElementById('drink-name').textContent = orderData.drink_name;
@@ -535,6 +630,7 @@
             const statusDescription = document.getElementById('status-description');
             const clientInfoSection = document.getElementById('client-info-section');
             const clientInfoText = document.getElementById('client-info-text');
+            const paymentBtn = document.getElementById('payment-btn');
             const retryBtn = document.getElementById('retry-btn');
             
             // Set status description
@@ -542,6 +638,24 @@
             
             // Set status icon and client info based on status
             switch (orderData.status) {
+                case 'created':
+                    statusIcon.innerHTML = '📋';
+                    statusIcon.className = 'status-icon';
+                    if (orderData.device.client_info) {
+                        clientInfoText.innerHTML = orderData.device.client_info;
+                        clientInfoSection.classList.remove('hidden');
+                    } else {
+                        clientInfoSection.classList.add('hidden');
+                    }
+                    if (!isExpired) {
+                        paymentBtn.classList.remove('hidden');
+                        paymentBtn.disabled = false;
+                    } else {
+                        paymentBtn.classList.add('hidden');
+                    }
+                    retryBtn.classList.add('hidden');
+                    break;
+                    
                 case 'pending':
                     statusIcon.innerHTML = '<div class="spinner"></div>';
                     if (orderData.device.client_info_pending) {
@@ -550,6 +664,7 @@
                     } else {
                         clientInfoSection.classList.add('hidden');
                     }
+                    paymentBtn.classList.add('hidden');
                     retryBtn.classList.add('hidden');
                     break;
                     
@@ -562,6 +677,7 @@
                     } else {
                         clientInfoSection.classList.add('hidden');
                     }
+                    paymentBtn.classList.add('hidden');
                     retryBtn.classList.add('hidden');
                     break;
                     
@@ -574,6 +690,7 @@
                     } else {
                         clientInfoSection.classList.add('hidden');
                     }
+                    paymentBtn.classList.add('hidden');
                     retryBtn.classList.remove('hidden');
                     break;
                     
@@ -585,6 +702,7 @@
                     } else {
                         clientInfoSection.classList.add('hidden');
                     }
+                    paymentBtn.classList.add('hidden');
                     retryBtn.classList.add('hidden');
                     break;
                     
@@ -597,6 +715,7 @@
                     } else {
                         clientInfoSection.classList.add('hidden');
                     }
+                    paymentBtn.classList.add('hidden');
                     retryBtn.classList.add('hidden');
                     break;
                     
@@ -604,6 +723,7 @@
                     statusIcon.innerHTML = '⚠';
                     statusIcon.className = 'status-icon error-icon';
                     clientInfoSection.classList.add('hidden');
+                    paymentBtn.classList.add('hidden');
                     retryBtn.classList.add('hidden');
                     break;
                     
@@ -611,6 +731,7 @@
                     statusIcon.innerHTML = '?';
                     statusIcon.className = 'status-icon';
                     clientInfoSection.classList.add('hidden');
+                    paymentBtn.classList.add('hidden');
                     retryBtn.classList.add('hidden');
             }
             
@@ -630,11 +751,11 @@
                     const data = await fetchOrderStatus(orderId);
                     updateUI(data);
                     
-                    // Stop polling for terminal statuses
-                    if (['successful', 'not_paid', 'failed'].includes(data.status)) {
+                    // Stop polling for terminal statuses and created status
+                    if (['created', 'successful', 'not_paid', 'failed'].includes(data.status)) {
                         clearInterval(pollingInterval);
                         pollingInterval = null;
-                        console.log('Polling stopped for terminal status:', data.status);
+                        console.log('Polling stopped for terminal/created status:', data.status);
                     }
                 } catch (error) {
                     console.error('Polling error:', error);
@@ -725,8 +846,8 @@
                 // Update UI
                 updateUI(data);
                 
-                // Start polling if not in terminal status
-                if (!['successful', 'not_paid', 'failed'].includes(data.status)) {
+                // Start polling if not in terminal status or created status
+                if (!['created', 'successful', 'not_paid', 'failed'].includes(data.status)) {
                     startPolling(orderId);
                 }
             } catch (error) {
@@ -735,9 +856,56 @@
             }
         }
         
+        /**
+         * Initiate payment (for created status)
+         */
+        async function initiatePayment() {
+            const orderId = document.getElementById('order-id').value;
+            const paymentBtn = document.getElementById('payment-btn');
+            
+            // Disable button
+            paymentBtn.disabled = true;
+            paymentBtn.textContent = 'Создание платежа...';
+            
+            try {
+                const csrfToken = getCookie('csrftoken');
+                
+                const response = await fetch('/v1/initiate-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        order_id: orderId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.redirect_url) {
+                    // Redirect to payment page
+                    window.location.href = data.redirect_url;
+                } else {
+                    // Show error
+                    alert(data.error || 'Произошла ошибка при создании платежа. Пожалуйста, попробуйте снова.');
+                    paymentBtn.disabled = false;
+                    paymentBtn.textContent = 'Перейти к оплате';
+                }
+            } catch (error) {
+                console.error('Payment initiation error:', error);
+                alert('Не удалось связаться с сервером. Пожалуйста, проверьте подключение к интернету и попробуйте снова.');
+                paymentBtn.disabled = false;
+                paymentBtn.textContent = 'Перейти к оплате';
+            }
+        }
+        
         // Initialize page on load
         document.addEventListener('DOMContentLoaded', function() {
             initializePage();
+            
+            // Attach payment button handler
+            document.getElementById('payment-btn').addEventListener('click', initiatePayment);
             
             // Attach retry payment handler
             document.getElementById('retry-btn').addEventListener('click', retryPayment);

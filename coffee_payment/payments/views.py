@@ -288,15 +288,18 @@ def process_payment_flow(request):
     
     # Log routing decision
     log_info(
-        f"Routing to scenario handler: {device.payment_scenario} for Order {order.id}",
+        f"Routing to unified status page for Order {order.id}, scenario: {device.payment_scenario}",
         'process_payment_flow'
     )
     
-    # Check payment scenario and conditionally show order info screen
+    # Check payment scenario and route accordingly
     if device.payment_scenario in ['Yookassa', 'TBank']:
-        # For Yookassa and TBank: show order info screen
-        log_info(f"Showing order info screen for Order {order.id} with scenario {device.payment_scenario}", 'process_payment_flow')
-        return show_order_info(request, device, order, drink_details)
+        # For Yookassa and TBank: redirect to unified status page
+        log_info(
+            f"Redirecting to unified status page for Order {order.id} with scenario {device.payment_scenario}",
+            'process_payment_flow'
+        )
+        return HttpResponseRedirect(f'/v1/order-status-page?order_id={order.id}')
     else:
         # For Custom scenario: execute payment scenario immediately
         log_info(f"Executing payment scenario immediately for Order {order.id} with scenario {device.payment_scenario}", 'process_payment_flow')
@@ -423,58 +426,6 @@ def process_payment(request):
         # ...
         return HttpResponse('Payment processed successfully')
     return HttpResponse('Invalid request', status=400)
-    
-def show_order_info(request, device, order, drink_details):
-    """
-    Render the order information screen before payment initiation.
-    
-    Args:
-        request: HttpRequest object
-        device: Device instance
-        order: Order instance (status='created')
-        drink_details: Dict with drink information from Tmetr API
-    
-    Returns:
-        HttpResponse with rendered order_info_screen.html template
-    """
-    # Size mapping from database format (1,2,3) to Russian labels
-    SIZE_LABELS = {
-        1: 'маленький',
-        2: 'средний',
-        3: 'большой'
-    }
-    
-    # Extract drink information from drink_details
-    drink_name = drink_details.get('name', order.drink_name) if drink_details else order.drink_name
-    
-    # Map drink size to Russian label
-    drink_size_label = SIZE_LABELS.get(order.size, 'неизвестный размер')
-    
-    # Format price from kopecks to rubles
-    drink_price_rubles = order.price / 100
-    
-    # Prepare context dictionary
-    context = {
-        'device': device,
-        'order': order,
-        'drink_name': drink_name,
-        'drink_size': drink_size_label,
-        'drink_price': drink_price_rubles,
-        'logo_url': device.logo_url,
-        'location': device.location,
-        'client_info': device.client_info,
-        'payment_scenario': device.payment_scenario
-    }
-    
-    # Log order info screen rendering event
-    log_info(
-        f"Rendering order info screen for Order {order.id}, "
-        f"Device {device.device_uuid}, Scenario {device.payment_scenario}",
-        'show_order_info'
-    )
-    
-    # Render template
-    return render(request, 'payments/order_info_screen.html', context)
 
 
 @csrf_exempt
@@ -674,9 +625,11 @@ def get_order_status(request, order_id):
         'drink_name': order.drink_name,
         'drink_size': SIZE_LABELS.get(order.size, 'неизвестный размер'),
         'price': float(order.price / 100),  # Convert kopecks to rubles
+        'expires_at': order.expires_at.isoformat(),  # ISO 8601 format with timezone
         'device': {
             'location': order.device.location,
             'logo_url': order.device.logo_url,
+            'client_info': order.device.client_info,  # For status=created
             'client_info_pending': order.device.client_info_pending,
             'client_info_paid': order.device.client_info_paid,
             'client_info_not_paid': order.device.client_info_not_paid,
