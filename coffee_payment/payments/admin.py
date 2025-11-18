@@ -45,9 +45,50 @@ class DeviceAdmin(admin.ModelAdmin):
     )
 
 
+@admin.register(Drink)
+class DrinkAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'available')
+    list_filter = ('available',)
+    search_fields = ('name', 'description')
+    readonly_fields = ('id',)
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('id', 'name', 'description', 'available')
+        }),
+        ('Pricing', {
+            'fields': ('prices',),
+            'description': 'Price mapping by size in format: {1: 2.50, 2: 3.00, 3: 3.50}'
+        }),
+        ('Receipt Metadata', {
+            'fields': ('meta',),
+            'description': 'Receipt metadata for YookassaReceipt scenario. Example: {"vat_code": 2, "measure": "piece", "payment_subject": "commodity", "payment_mode": "full_payment"}'
+        }),
+    )
+
+
+@admin.register(Receipt)
+class ReceiptAdmin(admin.ModelAdmin):
+    list_display = ('id', 'order', 'contact', 'amount', 'status', 'created_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('contact', 'order__id', 'drink_no')
+    readonly_fields = ('id', 'created_at', 'sent_at')
+    
+    fieldsets = (
+        ('Receipt Information', {
+            'fields': ('id', 'order', 'contact', 'drink_no', 'amount', 'status')
+        }),
+        ('Receipt Data', {
+            'fields': ('receipt_data',),
+            'description': 'Complete receipt data sent to Yookassa in JSON format'
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'sent_at')
+        }),
+    )
+
+
 admin.site.register(Order)
-admin.site.register(Drink)
 admin.site.register(User)
 admin.site.register(Payment)
-admin.site.register(Receipt)
 admin.site.register(Merchant)

@@ -293,8 +293,8 @@ def process_payment_flow(request):
     )
     
     # Check payment scenario and route accordingly
-    if device.payment_scenario in ['Yookassa', 'TBank']:
-        # For Yookassa and TBank: redirect to unified status page
+    if device.payment_scenario in ['Yookassa', 'YookassaReceipt', 'TBank']:
+        # For Yookassa, YookassaReceipt and TBank: redirect to unified status page
         log_info(
             f"Redirecting to unified status page for Order {order.id} with scenario {device.payment_scenario}",
             'process_payment_flow'
@@ -481,8 +481,10 @@ def initiate_payment(request):
         if request.content_type == 'application/json':
             data = json.loads(request.body)
             order_id = data.get('order_id')
+            email = data.get('email')
         else:
             order_id = request.POST.get('order_id')
+            email = request.POST.get('email')
     except json.JSONDecodeError:
         log_error(
             "Failed to parse JSON request body",
@@ -493,6 +495,21 @@ def initiate_payment(request):
             {'error': ERROR_MESSAGES['invalid_request']},
             status=400
         )
+    
+    # Validate email format if provided
+    if email:
+        import re
+        email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        if not re.match(email_pattern, email):
+            log_error(
+                f"Invalid email format for order {order_id}: {email}",
+                'initiate_payment',
+                'ERROR'
+            )
+            return JsonResponse(
+                {'error': 'Некорректный формат email'},
+                status=400
+            )
     
     # Validate order_id parameter
     if not order_id:
@@ -555,11 +572,18 @@ def initiate_payment(request):
         log_info(
             f"Executing payment scenario for Order {order.id}. "
             f"Device: {device.device_uuid}, Scenario: {device.payment_scenario}, "
-            f"Price: {order.price}, Drink: {order.drink_name}",
+            f"Price: {order.price}, Drink: {order.drink_name}, "
+            f"Email: {'provided' if email else 'not provided'}",
             'initiate_payment'
         )
         
-        response = PaymentScenarioService.execute_scenario(device, order, drink_details)
+        # Handle YookassaReceipt scenario separately to pass email
+        if device.payment_scenario == 'YookassaReceipt':
+            response = PaymentScenarioService.execute_yookassa_receipt_scenario(
+                device, order, drink_details, email=email
+            )
+        else:
+            response = PaymentScenarioService.execute_scenario(device, order, drink_details)
         
         log_info(
             f"Payment scenario executed successfully for Order {order.id}. "
@@ -645,6 +669,26 @@ def get_order_status(request, order_id):
         'get_order_status'
     )
     
+    # Get payment scenario and receipt config
+    device = order.device
+    payment_scenario = device.payment_scenario
+    is_receipt_mandatory = False
+    
+    if payment_scenario == 'YookassaReceipt':
+        try:
+            from payments.models import MerchantCredentials
+            credentials = MerchantCredentials.objects.get(
+                merchant=device.merchant,
+                scenario='YookassaReceipt'
+            )
+            is_receipt_mandatory = credentials.credentials.get('is_receipt_mandatory', False)
+        except MerchantCredentials.DoesNotExist:
+            log_info(
+                f"YookassaReceipt credentials not found for merchant {device.merchant.id}, "
+                f"defaulting is_receipt_mandatory to False",
+                'get_order_status'
+            )
+    
     # Prepare response data
     data = {
         'order_id': order.id,
@@ -653,6 +697,8 @@ def get_order_status(request, order_id):
         'drink_size': SIZE_LABELS.get(order.size, 'неизвестный размер'),
         'price': float(order.price / 100),  # Convert kopecks to rubles
         'expires_at': order.expires_at.isoformat(),  # ISO 8601 format with timezone
+        'payment_scenario': payment_scenario,
+        'is_receipt_mandatory': is_receipt_mandatory,
         'device': {
             'location': order.device.location,
             'logo_url': order.device.logo_url,

@@ -165,6 +165,51 @@
             color: #e74c3c;
         }
         
+        /* Email Input Section */
+        .email-section {
+            margin-bottom: 24px;
+        }
+        
+        .email-label {
+            display: block;
+            font-size: 16px;
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        
+        .email-input {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .email-input:focus {
+            outline: none;
+            border-color: #4a90e2;
+        }
+        
+        .email-input.invalid {
+            border-color: #e74c3c;
+        }
+        
+        .email-error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        .email-hint {
+            color: #666;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
         /* Payment Button (for status=created) */
         .payment-btn {
             width: 100%;
@@ -509,6 +554,24 @@
                 Время действия заказа истекло. Пожалуйста, отсканируйте QR-код снова.
             </div>
             
+            <!-- Email Input Section (for YookassaReceipt scenario) -->
+            <div id="email-section" class="email-section hidden">
+                <label for="email-input" class="email-label">Email для чека:</label>
+                <input 
+                    type="email" 
+                    id="email-input" 
+                    class="email-input" 
+                    placeholder="example@email.com"
+                    autocomplete="email"
+                >
+                <div id="email-error" class="email-error hidden">
+                    Пожалуйста, введите корректный email
+                </div>
+                <div id="email-hint" class="email-hint hidden">
+                    Email обязателен для получения чека
+                </div>
+            </div>
+            
             <!-- Payment Button (for created status) -->
             <button id="payment-btn" class="payment-btn hidden">
                 Перейти к оплате
@@ -566,6 +629,14 @@
         }
         
         /**
+         * Validate email format
+         */
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+        
+        /**
          * Fetch order status from API
          */
         async function fetchOrderStatus(orderId) {
@@ -587,6 +658,49 @@
                 return true;
             }
             return false;
+        }
+        
+        /**
+         * Update UI for YookassaReceipt scenario
+         */
+        function updateUIForYookassaReceipt(orderData, isReceiptMandatory) {
+            if (orderData.status === 'created') {
+                const emailSection = document.getElementById('email-section');
+                const emailInput = document.getElementById('email-input');
+                const emailHint = document.getElementById('email-hint');
+                const paymentBtn = document.getElementById('payment-btn');
+                
+                // Show email section
+                emailSection.classList.remove('hidden');
+                
+                // Show hint if mandatory
+                if (isReceiptMandatory) {
+                    emailHint.classList.remove('hidden');
+                    paymentBtn.disabled = true;
+                }
+                
+                // Add email validation on input
+                emailInput.addEventListener('input', function() {
+                    const email = emailInput.value.trim();
+                    const emailError = document.getElementById('email-error');
+                    
+                    if (email && !validateEmail(email)) {
+                        emailInput.classList.add('invalid');
+                        emailError.classList.remove('hidden');
+                        if (isReceiptMandatory) {
+                            paymentBtn.disabled = true;
+                        }
+                    } else {
+                        emailInput.classList.remove('invalid');
+                        emailError.classList.add('hidden');
+                        if (isReceiptMandatory) {
+                            paymentBtn.disabled = !email;
+                        } else {
+                            paymentBtn.disabled = false;
+                        }
+                    }
+                });
+            }
         }
         
         /**
@@ -655,6 +769,11 @@
                         paymentBtn.classList.add('hidden');
                     }
                     retryBtn.classList.add('hidden');
+                    
+                    // Handle YookassaReceipt scenario
+                    if (orderData.payment_scenario === 'YookassaReceipt') {
+                        updateUIForYookassaReceipt(orderData, orderData.is_receipt_mandatory || false);
+                    }
                     break;
                     
                 case 'pending':
@@ -876,6 +995,14 @@
         async function initiatePayment() {
             const orderId = document.getElementById('order-id').value;
             const paymentBtn = document.getElementById('payment-btn');
+            const emailInput = document.getElementById('email-input');
+            const email = emailInput ? emailInput.value.trim() : null;
+            
+            // Validate email if provided
+            if (email && !validateEmail(email)) {
+                alert('Пожалуйста, введите корректный email');
+                return;
+            }
             
             // Disable button
             paymentBtn.disabled = true;
@@ -884,15 +1011,22 @@
             try {
                 const csrfToken = getCookie('csrftoken');
                 
+                const requestBody = {
+                    order_id: orderId
+                };
+                
+                // Add email if provided
+                if (email) {
+                    requestBody.email = email;
+                }
+                
                 const response = await fetch('/v1/initiate-payment', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': csrfToken
                     },
-                    body: JSON.stringify({
-                        order_id: orderId
-                    })
+                    body: JSON.stringify(requestBody)
                 });
                 
                 const data = await response.json();

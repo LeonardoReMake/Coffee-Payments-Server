@@ -19,6 +19,10 @@ ERROR_MESSAGES = {
     'heartbeat_check_failed': 'Не удалось проверить статус устройства. Пожалуйста, попробуйте позже.',
     'invalid_order_id': 'Некорректный идентификатор заказа. Пожалуйста, отсканируйте QR-код снова.',
     'status_update_failed': 'Не удалось обновить статус заказа. Пожалуйста, обновите страницу.',
+    # Receipt-related messages
+    'invalid_email': 'Некорректный формат email. Пожалуйста, введите корректный email.',
+    'email_required': 'Email обязателен для получения чека.',
+    'receipt_creation_failed': 'Не удалось создать чек. Платеж выполнен успешно.',
 }
 
 INFO_MESSAGES = {

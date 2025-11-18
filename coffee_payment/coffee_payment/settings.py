@@ -36,7 +36,23 @@ ORDER_EXPIRATION_MINUTES = 15
 DEVICE_ONLINE_THRESHOLD_MINUTES = 15
 
 # Payment scenarios configuration
-PAYMENT_SCENARIOS = ['Yookassa', 'TBank', 'Custom']
+# Available scenarios:
+# - Yookassa: Standard Yookassa payment integration
+# - YookassaReceipt: Yookassa with fiscal receipt generation
+#   Credentials structure: {
+#     "account_id": "...",
+#     "secret_key": "...",
+#     "is_receipt_mandatory": true/false,
+#     "tax_system_code": 1,
+#     "timezone": 1,  # optional
+#     "vat_code": 2,  # optional fallback
+#     "measure": "piece",  # optional fallback
+#     "payment_subject": "commodity",  # optional fallback
+#     "payment_mode": "full_payment"  # optional fallback
+#   }
+# - TBank: TBank payment integration
+# - Custom: Custom external payment system
+PAYMENT_SCENARIOS = ['Yookassa', 'YookassaReceipt', 'TBank', 'Custom']
 DEFAULT_PAYMENT_SCENARIO = 'Yookassa'
 
 # SECURITY WARNING: don't run with debug turned on in production!

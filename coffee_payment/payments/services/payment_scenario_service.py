@@ -75,6 +75,12 @@ class PaymentScenarioService:
                 return PaymentScenarioService.execute_yookassa_scenario(
                     device, order, drink_details
                 )
+            elif scenario == 'YookassaReceipt':
+                # YookassaReceipt scenario requires email parameter
+                # This will be handled by initiate_payment view
+                return PaymentScenarioService.execute_yookassa_receipt_scenario(
+                    device, order, drink_details, email=None
+                )
             elif scenario == 'TBank':
                 return PaymentScenarioService.execute_tbank_scenario(
                     device, order, drink_details
@@ -330,6 +336,131 @@ class PaymentScenarioService:
             log_error(
                 f"Failed to redirect to custom payment for Order {order.id}: {str(e)}. "
                 f"Scenario: Custom, Merchant: {device.merchant.id}",
+                'payment_scenario_service',
+                'ERROR'
+            )
+            raise
+
+    @staticmethod
+    def execute_yookassa_receipt_scenario(device, order, drink_details, email=None):
+        """
+        Executes YookassaReceipt payment scenario.
+        
+        Args:
+            device: Device instance
+            order: Order instance with status='created'
+            drink_details: Dict containing drink information
+            email: Customer email for receipt (optional)
+            
+        Returns:
+            HttpResponseRedirect: Redirect to Yookassa payment page
+            
+        Raises:
+            ValueError: If YookassaReceipt credentials are missing
+        """
+        from payments.services.yookassa_receipt_service import YookassaReceiptService
+        
+        merchant = device.merchant
+        
+        # Get YookassaReceipt credentials
+        credentials = PaymentScenarioService.get_merchant_credentials(
+            merchant, 'YookassaReceipt'
+        )
+        
+        # Extract drink information
+        drink_price = drink_details.get('price', 5000)
+        drink_name = order.drink_name
+        drink_number = drink_details.get('drink_id', 'unknown')
+        order_uuid = str(order.id)
+        drink_size = str(order.size - 1)  # Convert back to 0-indexed
+        
+        # Get drink metadata if available
+        drink_meta = None
+        if drink_number:
+            try:
+                from payments.models import Drink
+                drink = Drink.objects.get(id=drink_number)
+                drink_meta = drink.meta
+            except Drink.DoesNotExist:
+                log_info(
+                    f"Drink {drink_number} not found, using credential fallback",
+                    'payment_scenario_service'
+                )
+            except Exception as e:
+                log_error(
+                    f"Error retrieving drink metadata: {str(e)}",
+                    'payment_scenario_service',
+                    'ERROR'
+                )
+        
+        log_info(
+            f"Processing YookassaReceipt payment for Order {order.id}. "
+            f"Request params: device_id={device.device_uuid}, "
+            f"drink_name={drink_name}, price={drink_price}, size={drink_size}, "
+            f"email={'provided' if email else 'not provided'}",
+            'payment_scenario_service'
+        )
+        
+        try:
+            # Build return URL to order status page
+            from django.conf import settings
+            domain = settings.BASE_URL
+            return_url = f"https://{domain}/v1/order-status-page?order_id={order_uuid}"
+            
+            # Create payment with receipt
+            payment = YookassaReceiptService.create_payment_with_receipt(
+                amount=drink_price / 100,
+                description=f'Оплата напитка: {drink_name}',
+                return_url=return_url,
+                drink_no=drink_number,
+                order_uuid=order_uuid,
+                size=drink_size,
+                credentials=credentials,
+                email=email,
+                drink_meta=drink_meta,
+                drink_name=drink_name
+            )
+            
+            payment_data = json.loads(payment.json())
+            payment_id = payment_data['id']
+            
+            # Update order with payment information and change status to 'pending'
+            order.payment_reference_id = payment_id
+            order.status = 'pending'
+            order.save()
+            
+            log_info(
+                f"Order {order.id} status updated to 'pending' with payment_id {payment_id}",
+                'payment_scenario_service'
+            )
+            
+            # Save receipt record if email provided
+            if email and 'receipt' in payment_data:
+                try:
+                    YookassaReceiptService.save_receipt_record(
+                        order=order,
+                        email=email,
+                        receipt_data=payment_data.get('receipt')
+                    )
+                except Exception as e:
+                    log_error(
+                        f"Failed to save receipt record for Order {order.id}: {str(e)}",
+                        'payment_scenario_service',
+                        'ERROR'
+                    )
+                    # Don't fail the payment if receipt save fails
+            
+            payment_url = payment_data['confirmation']['confirmation_url']
+            return HttpResponseRedirect(payment_url)
+            
+        except Exception as e:
+            # Update order status to 'failed' on error
+            order.status = 'failed'
+            order.save()
+            
+            log_error(
+                f"Failed to create YookassaReceipt payment for Order {order.id}: {str(e)}. "
+                f"Scenario: YookassaReceipt, Merchant: {merchant.id}",
                 'payment_scenario_service',
                 'ERROR'
             )
