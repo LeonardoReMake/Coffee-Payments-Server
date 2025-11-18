@@ -37,7 +37,8 @@ class DeviceAdmin(admin.ModelAdmin):
                 'client_info_paid',
                 'client_info_not_paid',
                 'client_info_make_pending',
-                'client_info_successful'
+                'client_info_successful',
+                'client_info_make_failed'
             ),
             'description': 'Status-specific information displayed to customers on order status tracking page. Supports HTML formatting (e.g., <a href="tel:+1234567890">Call support</a>).'
         }),
