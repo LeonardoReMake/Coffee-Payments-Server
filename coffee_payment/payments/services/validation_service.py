@@ -81,20 +81,12 @@ class OrderValidationService:
                 )
                 return False, ERROR_MESSAGES['order_expired'], None
             
-            # Check if order is in 'created' status
-            if order.status == 'created':
-                logger.info(
-                    f"[check_order_existence] Valid existing order found. "
-                    f"order_id={order_id}, will not create new order"
-                )
-                return False, None, order
-            
-            # Order exists but in different status
+            # Order exists and not expired - return existing order
             logger.info(
-                f"[check_order_existence] Order exists with status '{order.status}'. "
-                f"order_id={order_id}, will create new order"
+                f"[check_order_existence] Valid existing order found. "
+                f"order_id={order_id}, status={order.status}, will not create new order"
             )
-            return True, None, None
+            return False, None, order
             
         except Order.DoesNotExist:
             logger.info(
