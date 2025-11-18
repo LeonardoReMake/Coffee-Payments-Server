@@ -388,7 +388,7 @@ def yookassa_payment_result_webhook(request):
 
         tmetr_service = TmetrService()
         try:
-            # Subtask 5.4: Обновление статуса после отправки команды в Tmetr API
+            # Попытка отправить команду приготовления
             tmetr_service.send_make_command(
                 device_id=device.device_uuid, 
                 order_uuid=order_uuid, 
@@ -396,22 +396,49 @@ def yookassa_payment_result_webhook(request):
                 size=drink_size_dict[drink_size], 
                 price=drink_price
             )
+            
+            # Успешная отправка команды
             old_status = order.status
             order.status = 'make_pending'
             order.save(update_fields=['status'])
-            log_info(f"Order {order.id} status changed: {old_status} → make_pending. Request params: device_id={device.device_uuid}, order_uuid={order_uuid}, drink_uuid={drink_number}, size={drink_size_dict[drink_size]}, price={drink_price}", 'yookassa_payment_result_webhook')
+            log_info(
+                f"Order {order.id} status changed: {old_status} → make_pending. "
+                f"Request params: device_id={device.device_uuid}, order_uuid={order_uuid}, "
+                f"drink_uuid={drink_number}, size={drink_size_dict[drink_size]}, price={drink_price}",
+                'yookassa_payment_result_webhook'
+            )
+            
         except requests.RequestException as e:
-            # Subtask 5.5: Обработка ошибок Tmetr API
-            order.status = 'failed'
+            # Ошибка сети или API Tmetr
+            old_status = order.status
+            order.status = 'make_failed'
             order.save(update_fields=['status'])
-            log_error(f"Failed to send make command for order {order.id}: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
-            return HttpResponse(status=503)
+            log_error(
+                f"Failed to send make command for order {order.id}: {str(e)}. "
+                f"Status changed: {old_status} → make_failed. "
+                f"Request params: device_id={device.device_uuid}, order_uuid={order_uuid}, "
+                f"drink_uuid={drink_number}, size={drink_size_dict[drink_size]}, price={drink_price}",
+                'yookassa_payment_result_webhook',
+                'ERROR'
+            )
+            # Возвращаем 200, чтобы платежная система не повторяла webhook
+            return HttpResponse(status=200)
+            
         except Exception as e:
-            # Subtask 5.5: Обработка ошибок Tmetr API
-            order.status = 'failed'
+            # Другие непредвиденные ошибки
+            old_status = order.status
+            order.status = 'make_failed'
             order.save(update_fields=['status'])
-            log_error(f"Failed to send make command for order {order.id}: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
-            return HttpResponse(status=503)
+            log_error(
+                f"Unexpected error sending make command for order {order.id}: {str(e)}. "
+                f"Status changed: {old_status} → make_failed. "
+                f"Request params: device_id={device.device_uuid}, order_uuid={order_uuid}, "
+                f"drink_uuid={drink_number}, size={drink_size_dict[drink_size]}, price={drink_price}",
+                'yookassa_payment_result_webhook',
+                'ERROR'
+            )
+            # Возвращаем 200, чтобы платежная система не повторяла webhook
+            return HttpResponse(status=200)
 
     return HttpResponse(status=200)
 
@@ -635,6 +662,7 @@ def get_order_status(request, order_id):
             'client_info_not_paid': order.device.client_info_not_paid,
             'client_info_make_pending': order.device.client_info_make_pending,
             'client_info_successful': order.device.client_info_successful,
+            'client_info_make_failed': order.device.client_info_make_failed,
         }
     }
     

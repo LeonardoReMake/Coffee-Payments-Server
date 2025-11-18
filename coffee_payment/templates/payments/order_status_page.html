@@ -543,7 +543,8 @@
             'not_paid': 'Оплата не прошла',
             'make_pending': 'Готовим напиток...',
             'successful': 'Напиток готов',
-            'failed': 'Произошла ошибка при обработке заказа'
+            'failed': 'Произошла ошибка при обработке заказа',
+            'make_failed': 'Не удалось отправить команду на приготовление. Пожалуйста, обратитесь в поддержку.'
         };
         
         /**
@@ -727,6 +728,19 @@
                     retryBtn.classList.add('hidden');
                     break;
                     
+                case 'make_failed':
+                    statusIcon.innerHTML = '⚠';
+                    statusIcon.className = 'status-icon error-icon';
+                    if (orderData.device.client_info_make_failed) {
+                        clientInfoText.innerHTML = orderData.device.client_info_make_failed;
+                        clientInfoSection.classList.remove('hidden');
+                    } else {
+                        clientInfoSection.classList.add('hidden');
+                    }
+                    paymentBtn.classList.add('hidden');
+                    retryBtn.classList.add('hidden');
+                    break;
+                    
                 default:
                     statusIcon.innerHTML = '?';
                     statusIcon.className = 'status-icon';
@@ -752,7 +766,7 @@
                     updateUI(data);
                     
                     // Stop polling for terminal statuses and created status
-                    if (['created', 'successful', 'not_paid', 'failed'].includes(data.status)) {
+                    if (['created', 'successful', 'not_paid', 'failed', 'make_failed'].includes(data.status)) {
                         clearInterval(pollingInterval);
                         pollingInterval = null;
                         console.log('Polling stopped for terminal/created status:', data.status);

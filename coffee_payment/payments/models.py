@@ -79,6 +79,11 @@ class Device(models.Model):
         blank=True,
         help_text='Information displayed to customers when order status is successful. Supports HTML formatting.'
     )
+    client_info_make_failed = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Information displayed to customers when order status is make_failed. Supports HTML formatting.'
+    )
 
     def clean(self):
         from django.conf import settings
@@ -145,6 +150,7 @@ class Order(models.Model):
         ('make_pending', 'Make Pending'),
         ('successful', 'Successful'),
         ('failed', 'Failed'),
+        ('make_failed', 'Make Failed'),
     ])
     expires_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
