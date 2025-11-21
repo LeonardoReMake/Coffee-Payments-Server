@@ -101,7 +101,7 @@ class Device(models.Model):
 
 
 class Drink(models.Model):
-    id = models.IntegerField(primary_key=True)  # Changed from UUID to integer for device compatibility
+    id = models.CharField(primary_key=True, max_length=255)  # Changed from UUID to string for device compatibility
     name = models.CharField(max_length=255)
     description = models.TextField()
     prices = models.JSONField()  # Словарь с ценами в формате {1: 2.50, 2: 3.00, 3: 3.50}

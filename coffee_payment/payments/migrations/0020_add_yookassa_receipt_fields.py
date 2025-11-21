@@ -11,24 +11,26 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Add meta field to Drink model
-        migrations.AddField(
-            model_name='drink',
-            name='meta',
-            field=models.JSONField(
-                blank=True,
-                null=True,
-                help_text='Receipt metadata in JSON format. Example: {"vat_code": 2, "measure": "piece", "payment_subject": "commodity", "payment_mode": "full_payment"}'
-            ),
+        # Delete the old Drink model (this will drop the table)
+        migrations.DeleteModel(
+            name='Drink',
         ),
         
-        # Change Drink ID from UUID to Integer
-        # Note: This is a destructive operation that will require data migration
-        # For MVP, we'll handle this separately if needed
-        migrations.AlterField(
-            model_name='drink',
-            name='id',
-            field=models.IntegerField(primary_key=True, serialize=False),
+        # Recreate Drink model with string ID and meta field
+        migrations.CreateModel(
+            name='Drink',
+            fields=[
+                ('id', models.CharField(primary_key=True, max_length=255, serialize=False)),
+                ('name', models.CharField(max_length=255)),
+                ('description', models.TextField()),
+                ('prices', models.JSONField()),
+                ('available', models.BooleanField(default=True)),
+                ('meta', models.JSONField(
+                    blank=True,
+                    null=True,
+                    help_text='Receipt metadata in JSON format. Example: {"vat_code": 2, "measure": "piece", "payment_subject": "commodity", "payment_mode": "full_payment"}'
+                )),
+            ],
         ),
         
         # Add new fields to Receipt model

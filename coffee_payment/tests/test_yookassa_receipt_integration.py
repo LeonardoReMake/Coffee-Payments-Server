@@ -50,7 +50,7 @@ class TestYookassaReceiptIntegration(TestCase):
         
         # Create drink with meta
         self.drink = Drink.objects.create(
-            id=1,
+            id='1',
             name='Американо',
             description='Test drink',
             prices={1: 150, 2: 180, 3: 200},
