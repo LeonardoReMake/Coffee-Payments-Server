@@ -50,7 +50,6 @@ class DrinkAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'available')
     list_filter = ('available',)
     search_fields = ('name', 'description')
-    readonly_fields = ('id',)
     
     fieldsets = (
         ('Basic Information', {
