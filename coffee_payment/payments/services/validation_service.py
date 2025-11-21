@@ -190,7 +190,8 @@ class OrderValidationService:
     def execute_validation_chain(
         request_params: dict,
         device_uuid: str,
-        order_id: str
+        order_id: str,
+        is_test_device: bool
     ) -> Dict[str, Any]:
         """
         Executes complete validation chain with early termination.
@@ -250,7 +251,7 @@ class OrderValidationService:
         
         # Step 3: Device online status check
         device_online, device_error = OrderValidationService.check_device_online_status(device_uuid)
-        if not device_online:
+        if not device_online and not is_test_device:
             logger.warning(
                 f"[execute_validation_chain] Validation chain terminated: device status check failed. "
                 f"device_uuid={device_uuid}, error={device_error}"
@@ -258,7 +259,7 @@ class OrderValidationService:
             return {
                 'valid': False,
                 'error_message': device_error,
-                'existing_order': existing_order,
+                'existing_order': None,
                 'should_create_new_order': False
             }
         

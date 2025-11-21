@@ -163,21 +163,22 @@ def process_payment_flow(request):
         'process_payment_flow'
     )
     
+    device = validate_device(device_uuid)
+
+    is_test_device = device.status == 'test'
+
     # Execute validation chain with early termination on failure
     validation_result = OrderValidationService.execute_validation_chain(
         request_params=request_params,
         device_uuid=device_uuid,
-        order_id=order_uuid
+        order_id=order_uuid,
+        is_test_device=is_test_device
     )
     
     # Validate device and merchant using qr_code_service functions
     try:
-        device = validate_device(device_uuid)
-
-        is_test_device = device.status == 'test'
-
         # Handle validation failure
-        if not validation_result['valid'] and not is_test_device:
+        if not validation_result['valid']:
             log_error(
                 f"Validation chain failed for order {order_uuid}: {validation_result['error_message']}",
                 'process_payment_flow',
