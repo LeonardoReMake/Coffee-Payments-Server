@@ -31,7 +31,8 @@ class Device(models.Model):
     status = models.CharField(max_length=50, choices=[
         ('online', 'Online'),
         ('offline', 'Offline'),
-        ('error', 'Error')
+        ('error', 'Error'),
+        ('test', 'Test')
     ])
     last_interaction = models.DateTimeField()
     payment_scenario = models.CharField(

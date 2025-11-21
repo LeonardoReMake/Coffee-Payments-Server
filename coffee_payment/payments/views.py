@@ -174,8 +174,10 @@ def process_payment_flow(request):
     try:
         device = validate_device(device_uuid)
 
+        is_test_device = device.status == 'test'
+
         # Handle validation failure
-        if not validation_result['valid']:
+        if not validation_result['valid'] and not is_test_device:
             log_error(
                 f"Validation chain failed for order {order_uuid}: {validation_result['error_message']}",
                 'process_payment_flow',
@@ -188,6 +190,7 @@ def process_payment_flow(request):
             f"Validation chain completed. valid={validation_result['valid']}, "
             f"should_create_new_order={validation_result['should_create_new_order']}, "
             f"error_message={validation_result['error_message']}",
+            f"is_test_device={is_test_device}",
             'process_payment_flow'
         )
 
