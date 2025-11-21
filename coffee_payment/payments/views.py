@@ -189,7 +189,7 @@ def process_payment_flow(request):
         log_info(
             f"Validation chain completed. valid={validation_result['valid']}, "
             f"should_create_new_order={validation_result['should_create_new_order']}, "
-            f"error_message={validation_result['error_message']}",
+            f"error_message={validation_result['error_message']}, "
             f"is_test_device={is_test_device}",
             'process_payment_flow'
         )
