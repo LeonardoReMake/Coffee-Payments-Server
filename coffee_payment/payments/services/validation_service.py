@@ -258,7 +258,7 @@ class OrderValidationService:
             return {
                 'valid': False,
                 'error_message': device_error,
-                'existing_order': None,
+                'existing_order': existing_order,
                 'should_create_new_order': False
             }
         
