@@ -33,6 +33,7 @@ This table documents all environment variables that can be configured in the app
 | **Celery** | | |
 | `CELERY_BROKER_URL` | Redis URL for Celery broker | `redis://localhost:6379/0` |
 | `CELERY_RESULT_BACKEND` | Redis URL for Celery result backend | `redis://localhost:6379/0` |
+| `SKIP_MIGRATIONS` | Skip database migrations on startup (for Celery workers) | — |
 | **Application Settings** | | |
 | `ORDER_EXPIRATION_MINUTES` | Time in minutes before an order expires | `15` |
 | `DEVICE_ONLINE_THRESHOLD_MINUTES` | Time threshold for device online status | `15` |

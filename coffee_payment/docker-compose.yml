@@ -50,7 +50,9 @@ services:
     depends_on:
       - db
       - redis
+      - web
     environment:
+      - SKIP_MIGRATIONS=true
       - DEBUG=True
       - SECRET_KEY=klkgm3n3ktjn23kl9456n2l35
       - DB_NAME=coffee_payment
@@ -69,7 +71,9 @@ services:
     depends_on:
       - db
       - redis
+      - web
     environment:
+      - SKIP_MIGRATIONS=true
       - DEBUG=True
       - SECRET_KEY=klkgm3n3ktjn23kl9456n2l35
       - DB_NAME=coffee_payment

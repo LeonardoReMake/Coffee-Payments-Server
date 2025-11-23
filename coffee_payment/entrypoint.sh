@@ -3,12 +3,18 @@
 # Создаем директорию для логов, если она не существует
 mkdir -p /app/logs
 
-# Применяем миграции
-python manage.py migrate
-
-# Создаем суперпользователя, если он не существует
-if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ] && [ "$DJANGO_SUPERUSER_EMAIL" ]; then
-    python manage.py createsuperuser --no-input || true
+# Применяем миграции только для web сервиса (не для celery workers)
+# Это предотвращает race condition при одновременном запуске миграций
+if [ "$SKIP_MIGRATIONS" != "true" ]; then
+    echo "Running database migrations..."
+    python manage.py migrate
+    
+    # Создаем суперпользователя, если он не существует
+    if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ] && [ "$DJANGO_SUPERUSER_EMAIL" ]; then
+        python manage.py createsuperuser --no-input || true
+    fi
+else
+    echo "Skipping migrations (SKIP_MIGRATIONS=true)"
 fi
 
 # Проверяем режим запуска
