@@ -10,6 +10,14 @@ services:
       POSTGRES_USER: leonid
       POSTGRES_PASSWORD: nfk3m51dst
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8080
@@ -19,6 +27,7 @@ services:
       - "8080:8080"
     depends_on:
       - db
+      - redis
     environment:
       - DEBUG=True
       - SECRET_KEY=klkgm3n3ktjn23kl9456n2l35
@@ -30,6 +39,47 @@ services:
       - DJANGO_SUPERUSER_USERNAME=admin
       - DJANGO_SUPERUSER_PASSWORD=admin
       - DJANGO_SUPERUSER_EMAIL=admin@emailme.ru
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+  celery_worker:
+    build: .
+    command: celery -A coffee_payment worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=klkgm3n3ktjn23kl9456n2l35
+      - DB_NAME=coffee_payment
+      - DB_USER=leonid
+      - DB_PASSWORD=nfk3m51dst
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+  celery_beat:
+    build: .
+    command: celery -A coffee_payment beat --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=klkgm3n3ktjn23kl9456n2l35
+      - DB_NAME=coffee_payment
+      - DB_USER=leonid
+      - DB_PASSWORD=nfk3m51dst
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
 
 volumes:
   postgres_data:
+  redis_data:
