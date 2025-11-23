@@ -167,12 +167,19 @@ class PaymentScenarioService:
             payment_id = payment_data['id']
             
             # Update order with payment information and change status to 'pending'
+            from django.utils import timezone
+            from datetime import timedelta
+            from django.conf import settings
+            
             order.payment_reference_id = payment_id
             order.status = 'pending'
+            order.payment_started_at = timezone.now()
+            order.next_check_at = timezone.now() + timedelta(seconds=settings.FAST_TRACK_INTERVAL_S)
             order.save()
             
             log_info(
-                f"Order {order.id} status updated to 'pending' with payment_id {payment_id}",
+                f"Order {order.id} status updated to 'pending' with payment_id {payment_id}, "
+                f"payment_started_at={order.payment_started_at}, next_check_at={order.next_check_at}",
                 'payment_scenario_service'
             )
             
@@ -250,12 +257,19 @@ class PaymentScenarioService:
                 raise Exception(f"TBank payment failed: {error}")
             
             # Update order with payment information and change status to 'pending'
+            from django.utils import timezone
+            from datetime import timedelta
+            from django.conf import settings
+            
             order.payment_reference_id = payment.payment_id
             order.status = 'pending'
+            order.payment_started_at = timezone.now()
+            order.next_check_at = timezone.now() + timedelta(seconds=settings.FAST_TRACK_INTERVAL_S)
             order.save()
             
             log_info(
-                f"Order {order.id} status updated to 'pending' with payment_id {payment.payment_id}",
+                f"Order {order.id} status updated to 'pending' with payment_id {payment.payment_id}, "
+                f"payment_started_at={order.payment_started_at}, next_check_at={order.next_check_at}",
                 'payment_scenario_service'
             )
             
@@ -425,12 +439,19 @@ class PaymentScenarioService:
             payment_id = payment_data['id']
             
             # Update order with payment information and change status to 'pending'
+            from django.utils import timezone
+            from datetime import timedelta
+            from django.conf import settings
+            
             order.payment_reference_id = payment_id
             order.status = 'pending'
+            order.payment_started_at = timezone.now()
+            order.next_check_at = timezone.now() + timedelta(seconds=settings.FAST_TRACK_INTERVAL_S)
             order.save()
             
             log_info(
-                f"Order {order.id} status updated to 'pending' with payment_id {payment_id}",
+                f"Order {order.id} status updated to 'pending' with payment_id {payment_id}, "
+                f"payment_started_at={order.payment_started_at}, next_check_at={order.next_check_at}",
                 'payment_scenario_service'
             )
             

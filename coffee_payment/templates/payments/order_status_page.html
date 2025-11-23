@@ -605,6 +605,7 @@
             'paid': 'Заказ успешно оплачен, начинаем готовить',
             'not_paid': 'Оплата не прошла',
             'make_pending': 'Готовим напиток...',
+            'manual_make': 'Требуется ручное приготовление',
             'successful': 'Напиток готов',
             'failed': 'Произошла ошибка при обработке заказа',
             'make_failed': 'Не удалось отправить команду на приготовление. Пожалуйста, обратитесь в поддержку.'
@@ -826,6 +827,21 @@
                     retryBtn.classList.add('hidden');
                     break;
                     
+                case 'manual_make':
+                    statusIcon.innerHTML = '⚠️';
+                    statusIcon.className = 'status-icon';
+                    statusDescription.textContent = 'Требуется ручное приготовление';
+                    if (orderData.device.client_info_manual_make) {
+                        clientInfoText.innerHTML = orderData.device.client_info_manual_make;
+                        clientInfoSection.classList.remove('hidden');
+                    } else {
+                        clientInfoText.innerHTML = 'Ваш платеж прошел успешно, но напиток требует ручного приготовления. Пожалуйста, обратитесь к персоналу.';
+                        clientInfoSection.classList.remove('hidden');
+                    }
+                    paymentBtn.classList.add('hidden');
+                    retryBtn.classList.add('hidden');
+                    break;
+                    
                 case 'successful':
                     statusIcon.innerHTML = '✓';
                     statusIcon.className = 'status-icon success-icon';
@@ -885,7 +901,7 @@
                     updateUI(data);
                     
                     // Stop polling for terminal statuses and created status
-                    if (['created', 'successful', 'not_paid', 'failed', 'make_failed'].includes(data.status)) {
+                    if (['created', 'successful', 'not_paid', 'failed', 'make_failed', 'manual_make'].includes(data.status)) {
                         clearInterval(pollingInterval);
                         pollingInterval = null;
                         console.log('Polling stopped for terminal/created status:', data.status);
@@ -980,7 +996,7 @@
                 updateUI(data);
                 
                 // Start polling if not in terminal status or created status
-                if (!['created', 'successful', 'not_paid', 'failed'].includes(data.status)) {
+                if (!['created', 'successful', 'not_paid', 'failed', 'manual_make'].includes(data.status)) {
                     startPolling(orderId);
                 }
             } catch (error) {

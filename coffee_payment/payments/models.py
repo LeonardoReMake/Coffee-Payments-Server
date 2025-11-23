@@ -85,6 +85,11 @@ class Device(models.Model):
         blank=True,
         help_text='Information displayed to customers when order status is make_failed. Supports HTML formatting.'
     )
+    client_info_manual_make = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Information displayed to customers when order status is manual_make. Supports HTML formatting.'
+    )
 
     def clean(self):
         from django.conf import settings
@@ -154,11 +159,39 @@ class Order(models.Model):
         ('paid', 'Paid'),
         ('not_paid', 'Not Paid'),
         ('make_pending', 'Make Pending'),
+        ('manual_make', 'Manual Make'),
         ('successful', 'Successful'),
         ('failed', 'Failed'),
         ('make_failed', 'Make Failed'),
     ])
     expires_at = models.DateTimeField(null=True, blank=True)
+    
+    # Background payment check fields
+    payment_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Timestamp when user was redirected to payment provider (with timezone)'
+    )
+    next_check_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Timestamp for next payment status check (with timezone)'
+    )
+    last_check_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Timestamp of last payment status check (with timezone)'
+    )
+    check_attempts = models.IntegerField(
+        default=0,
+        help_text='Number of payment status check attempts'
+    )
+    failed_presentation_desc = models.TextField(
+        null=True,
+        blank=True,
+        help_text='User-friendly description of failure reason'
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

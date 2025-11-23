@@ -325,12 +325,15 @@ def process_payment_flow(request):
 
 @csrf_exempt
 def yookassa_payment_result_webhook(request):
+    from payments.services.payment_status_service import PaymentStatusService
+    
     log_info('Processing Yookassa webhook', 'django')
     log_info('Processing Yookassa webhook', 'yookassa_payment_result_webhook')
     event_json = json.loads(request.body)
 
     event_type = event_json['event']
     payment_id = event_json['object']['id']
+    payment_status = event_json['object']['status']
     
     try:
         # Extract order_uuid from payment metadata
@@ -343,25 +346,14 @@ def yookassa_payment_result_webhook(request):
         order.payment_reference_id = payment_id
         order.save(update_fields=['payment_reference_id'])
         
-        # Subtask 5.1: Проверка протухания заказа
+        # Check if order has expired
         if order.is_expired():
             log_error(f"Order {order.id} has expired", 'yookassa_payment_result_webhook', 'ERROR')
             return HttpResponse(status=400)
         
-        # Subtask 5.2: Обработка успешной оплаты
-        if event_type == 'payment.succeeded':
-            old_status = order.status
-            order.status = 'paid'
-            order.save(update_fields=['status'])
-            log_info(f"Order {order.id} status changed: {old_status} → paid", 'yookassa_payment_result_webhook')
-        
-        # Subtask 5.3: Обработка неуспешной оплаты
-        elif event_type == 'payment.canceled':
-            old_status = order.status
-            order.status = 'not_paid'
-            order.save(update_fields=['status'])
-            log_info(f"Order {order.id} status changed: {old_status} → not_paid", 'yookassa_payment_result_webhook')
-            return HttpResponse(status=200)
+        # Use PaymentStatusService for centralized payment processing
+        log_info(f"Processing payment status '{payment_status}' for order {order.id} using PaymentStatusService", 'yookassa_payment_result_webhook')
+        PaymentStatusService.process_payment_status(order, payment_status)
         
     except KeyError:
         log_error(f"Missing order_uuid in payment metadata for payment {payment_id}", 'yookassa_payment_result_webhook', 'ERROR')
@@ -370,79 +362,8 @@ def yookassa_payment_result_webhook(request):
         log_error(f"Order with id {order_uuid} not found", 'yookassa_payment_result_webhook', 'ERROR')
         return HttpResponse(status=404)
     except Exception as e:
-        log_error(f"Error updating order status: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
+        log_error(f"Error processing webhook: {str(e)}", 'yookassa_payment_result_webhook', 'ERROR')
         return HttpResponse(status=500)
-
-    # Только для успешных платежей продолжаем отправку команды в Tmetr API
-    if event_type == 'payment.succeeded':
-        drink_number = event_json['object']['metadata']['drink_number']
-        order_uuid = event_json['object']['metadata']['order_uuid']
-        drink_size = event_json['object']['metadata']['size']
-        drink_price_str = event_json['object']['amount']['value']
-        drink_price = int(float(drink_price_str)*100)
-        device = order.device
-
-        drink_size_dict = {
-            '0': 'SMALL',
-            '1': 'MEDIUM',
-            '2': 'BIG'
-        }
-
-        log_info(f"Drink number: {drink_number}, order UUID: {order_uuid}, size {drink_size_dict[drink_size]}, price kop {drink_price},  deviceUUID: {device.device_uuid}", 'django')
-
-        tmetr_service = TmetrService()
-        try:
-            # Попытка отправить команду приготовления
-            tmetr_service.send_make_command(
-                device_id=device.device_uuid, 
-                order_uuid=order_uuid, 
-                drink_uuid=drink_number, 
-                size=drink_size_dict[drink_size], 
-                price=drink_price
-            )
-            
-            # Успешная отправка команды
-            old_status = order.status
-            order.status = 'make_pending'
-            order.save(update_fields=['status'])
-            log_info(
-                f"Order {order.id} status changed: {old_status} → make_pending. "
-                f"Request params: device_id={device.device_uuid}, order_uuid={order_uuid}, "
-                f"drink_uuid={drink_number}, size={drink_size_dict[drink_size]}, price={drink_price}",
-                'yookassa_payment_result_webhook'
-            )
-            
-        except requests.RequestException as e:
-            # Ошибка сети или API Tmetr
-            old_status = order.status
-            order.status = 'make_failed'
-            order.save(update_fields=['status'])
-            log_error(
-                f"Failed to send make command for order {order.id}: {str(e)}. "
-                f"Status changed: {old_status} → make_failed. "
-                f"Request params: device_id={device.device_uuid}, order_uuid={order_uuid}, "
-                f"drink_uuid={drink_number}, size={drink_size_dict[drink_size]}, price={drink_price}",
-                'yookassa_payment_result_webhook',
-                'ERROR'
-            )
-            # Возвращаем 200, чтобы платежная система не повторяла webhook
-            return HttpResponse(status=200)
-            
-        except Exception as e:
-            # Другие непредвиденные ошибки
-            old_status = order.status
-            order.status = 'make_failed'
-            order.save(update_fields=['status'])
-            log_error(
-                f"Unexpected error sending make command for order {order.id}: {str(e)}. "
-                f"Status changed: {old_status} → make_failed. "
-                f"Request params: device_id={device.device_uuid}, order_uuid={order_uuid}, "
-                f"drink_uuid={drink_number}, size={drink_size_dict[drink_size]}, price={drink_price}",
-                'yookassa_payment_result_webhook',
-                'ERROR'
-            )
-            # Возвращаем 200, чтобы платежная система не повторяла webhook
-            return HttpResponse(status=200)
 
     return HttpResponse(status=200)
 
@@ -711,6 +632,7 @@ def get_order_status(request, order_id):
             'client_info_paid': order.device.client_info_paid,
             'client_info_not_paid': order.device.client_info_not_paid,
             'client_info_make_pending': order.device.client_info_make_pending,
+            'client_info_manual_make': order.device.client_info_manual_make,
             'client_info_successful': order.device.client_info_successful,
             'client_info_make_failed': order.device.client_info_make_failed,
         }

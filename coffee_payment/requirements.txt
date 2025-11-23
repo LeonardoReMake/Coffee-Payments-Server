@@ -16,3 +16,6 @@ urllib3==2.3.0
 wheel==0.44.0
 wrapt==1.17.2
 yookassa==3.5.0
+celery==5.3.4
+redis==5.0.1
+hypothesis==6.92.1

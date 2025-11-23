@@ -55,6 +55,28 @@ DEVICE_ONLINE_THRESHOLD_MINUTES = 15
 PAYMENT_SCENARIOS = ['Yookassa', 'YookassaReceipt', 'TBank', 'Custom']
 DEFAULT_PAYMENT_SCENARIO = 'Yookassa'
 
+# Background payment check configuration
+PAYMENT_CHECK_INTERVAL_S = 10  # How often to run the background task (seconds)
+FAST_TRACK_LIMIT_S = 300  # 5 minutes - threshold for fast vs slow track
+FAST_TRACK_INTERVAL_S = 5  # Check every 5 seconds for fast track
+SLOW_TRACK_INTERVAL_S = 60  # Check every 60 seconds for slow track
+PAYMENT_ATTEMPTS_LIMIT = 10  # Maximum check attempts before marking as failed
+PAYMENT_API_TIMEOUT_S = 3  # Timeout for payment provider API calls (seconds)
+
+# Celery configuration
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_BEAT_SCHEDULE = {
+    'check-pending-payments': {
+        'task': 'payments.tasks.check_pending_payments',
+        'schedule': PAYMENT_CHECK_INTERVAL_S,
+    },
+}
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -232,6 +254,16 @@ LOGGING = {
             'propagate': True,
         },
         'process_payment_flow': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'payment_status_service': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'check_pending_payments': {
             'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
