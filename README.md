@@ -13,6 +13,9 @@ This table documents all environment variables that can be configured in the app
 | `ALLOWED_HOSTS` | List of allowed host/domain names | `localhost, 127.0.0.1, pay.tmetr.ru` |
 | `BASE_URL` | Base URL for the application | `pay.tmetr.ru` |
 | `CSRF_TRUSTED_ORIGINS` | List of trusted origins for CSRF | `https://pay.tmetr.ru` |
+| `DJANGO_SUPERUSER_USERNAME` | Username for Django superuser (used in automated setup) | — |
+| `DJANGO_SUPERUSER_PASSWORD` | Password for Django superuser (used in automated setup) | — |
+| `DJANGO_SUPERUSER_EMAIL` | Email for Django superuser (used in automated setup) | — |
 | **Database Configuration** | | |
 | `DB_NAME` | PostgreSQL database name | — |
 | `DB_USER` | PostgreSQL database user | — |

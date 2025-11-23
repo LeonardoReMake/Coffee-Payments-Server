@@ -22,7 +22,7 @@ BASE_URL = os.getenv('BASE_URL', 'pay.tmetr.ru')
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)8hc120s$c)^11n^fl==uogtt9e(qlu^(vc8u%hfy_67to6ox%'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-)8hc120s$c)^11n^fl==uogtt9e(qlu^(vc8u%hfy_67to6ox%')
 
 # Tmetr settings
 TMETR_TOKEN = os.getenv('TMETR_TOKEN', 'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ4VHdiUnlMbnM3WTVkSzV2RlkwQ0xuX0JJNm1GMXU5WkVPQ09SUlRtZkg0In0.eyJleHAiOjE3NjE0NTYyMjYsImlhdCI6MTc2MTQyMDIyOCwiYXV0aF90aW1lIjoxNzYxNDIwMjI2LCJqdGkiOiI0NThlOTE3My1lNTZkLTQyYTItOTcwNy1hYTVjNjNiMzFjYzMiLCJpc3MiOiJodHRwczovL2xvZ2luLmRldi50bWV0ci5ydS9hdXRoL3JlYWxtcy9kZXYtdGVsZW1ldHJ5LXJlYWxtIiwiYXVkIjoiYWNjb3VudCIsInN1YiI6ImJkYmY1MmQ1LTQ0NzMtNDQ4Yi1hYjA5LTQyYzRlNjIxMWZjZiIsInR5cCI6IkJlYXJlciIsImF6cCI6ImRldi10ZWxlbWV0cnktY2xpZW50Iiwic2Vzc2lvbl9zdGF0ZSI6ImZmZTM1NzllLWQwNDQtNDA3OS04Mjg4LTc0YmM4M2FjMzdiOSIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiQklMTElOR19XUklURVIiLCJERVZJQ0VTX1dSSVRFUiIsIlNVQl9DTElFTlRTX0FETUlOIiwiVEVDSE5JQ0FMX0lORk9fQURNSU4iLCJCSUxMSU5HX0FETUlOIiwiVVNFUl9BRE1JTiIsImRlZmF1bHQtcm9sZXMtZGV2LXRlbGVtZXRyeS1yZWFsbSIsIk9XTl9DTElFTlRfUkVBREVSIiwiVVNFUl9SRUFERVIiLCJTVUJfQ0xJRU5UU19SRUFERVIiLCJURUNITklDQUxfSU5GT19XUklURVIiLCJGSU5BTkNFX0lORk9fQURNSU4iLCJPV05fQ0xJRU5UX0FETUlOIiwiU1VCX0NMSUVOVFNfV1JJVEVSIiwiQklMTElOR19SRUFERVIiLCJERVZJQ0VTX1JFQURFUiIsIk9XTl9DTElFTlRfV1JJVEVSIiwib2ZmbGluZV9hY2Nlc3MiLCJURUNITklDQUxfSU5GT19SRUFERVIiLCJVU0VSX1dSSVRFUiIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgZW1haWwgYXBpIHByb2ZpbGUgcm9sZXMiLCJzaWQiOiJmZmUzNTc5ZS1kMDQ0LTQwNzktODI4OC03NGJjODNhYzM3YjkiLCJsYXN0TmFtZSI6ItCQ0LvQuNC10LIiLCJmaXJzdE5hbWUiOiLQkNGA0YLQtdC8IDEiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY2xpZW50SWQiOiI1YmUxOGNiYy02Y2JhLTQ3NzQtYjVhYi0xMDQ4MjRjMGZiOGYiLCJnZW5kZXIiOiJNYWxlIiwibmFtZSI6ItCQ0YDRgtC10LwgMSDQkNC70LjQtdCyIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiZXhwZXJ0LWNtIiwibG9jYWxlIjoicnUiLCJnaXZlbl9uYW1lIjoi0JDRgNGC0LXQvCAxIiwiZmFtaWx5X25hbWUiOiLQkNC70LjQtdCyIiwiZW1haWwiOiJleHBlcnQtY21AZndzb2Z0LnJ1In0.a7IObblUSdTaREnvcNrAqtEYgNetX--G_rUBK3Hktx3RY0vDEamIceJ2xt55s64BAzVVt1YwuTIEaIUebwcQVtc-npeg3eeEkWObZbGakKxVrBjOCRg4Pkz3RKN7_q8WrvheK3vAjJzb_WCdLXNKhHQSwwW4XWWSp45rYD4f6MvVOOo--DJrQnExs-qaiI0fbMhwxknodixlcUvgZyjxLHzWmtJz4G7vAS3X_ABoTkSPl-0kElqaCtQ77kaRb5S2v6cyWwJEKxBSr9PB-uEztG9hPQ06BTjoUGsA-FmGp_tgWWyNJ8-EuHJOsDX5ndf29STAtq1WwEovZ7WjbtPxlg')
@@ -56,12 +56,12 @@ PAYMENT_SCENARIOS = ['Yookassa', 'YookassaReceipt', 'TBank', 'Custom']
 DEFAULT_PAYMENT_SCENARIO = 'Yookassa'
 
 # Background payment check configuration
-PAYMENT_CHECK_INTERVAL_S = 5  # How often to run the background task (seconds)
-FAST_TRACK_LIMIT_S = 300  # 5 minutes - threshold for fast vs slow track
-FAST_TRACK_INTERVAL_S = 2  # Check every 5 seconds for fast track
-SLOW_TRACK_INTERVAL_S = 60  # Check every 60 seconds for slow track
-PAYMENT_ATTEMPTS_LIMIT = 50  # Maximum check attempts before marking as failed
-PAYMENT_API_TIMEOUT_S = 3  # Timeout for payment provider API calls (seconds)
+PAYMENT_CHECK_INTERVAL_S = int(os.getenv('PAYMENT_CHECK_INTERVAL_S', '5'))  # How often to run the background task (seconds)
+FAST_TRACK_LIMIT_S = int(os.getenv('FAST_TRACK_LIMIT_S', '300'))  # 5 minutes - threshold for fast vs slow track
+FAST_TRACK_INTERVAL_S = int(os.getenv('FAST_TRACK_INTERVAL_S', '2'))  # Check every 5 seconds for fast track
+SLOW_TRACK_INTERVAL_S = int(os.getenv('SLOW_TRACK_INTERVAL_S', '60'))  # Check every 60 seconds for slow track
+PAYMENT_ATTEMPTS_LIMIT = int(os.getenv('PAYMENT_ATTEMPTS_LIMIT', '50'))  # Maximum check attempts before marking as failed
+PAYMENT_API_TIMEOUT_S = int(os.getenv('PAYMENT_API_TIMEOUT_S', '3'))  # Timeout for payment provider API calls (seconds)
 
 # Celery configuration
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
@@ -78,7 +78,7 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = [
     'localhost',
