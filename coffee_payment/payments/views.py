@@ -1,6 +1,7 @@
 import json
 import requests
-from django.http import HttpResponseRedirect, HttpResponse, Http404
+from datetime import datetime
+from django.http import HttpResponseRedirect, HttpResponse, Http404, JsonResponse
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from payments.models import Device, Order, Drink
@@ -10,6 +11,37 @@ from payments.services.telemetry_service import get_drink_price
 from payments.services.yookassa_service import create_payment
 from django.views.decorators.csrf import csrf_exempt
 from payments.services.tmetr_service import TmetrService
+
+
+def health_check(request):
+    """
+    Lightweight health check endpoint for Kubernetes probes.
+    
+    This endpoint is designed to be fast and independent of external services.
+    It does not perform database queries or external API calls.
+    
+    Returns:
+        JsonResponse: JSON response with status and timestamp
+            - 200 OK: Application is running normally
+            - 500 Internal Server Error: Application encountered critical errors
+    """
+    try:
+        # Simple health check - just verify the application is running
+        # No database queries or external service calls
+        response_data = {
+            'status': 'healthy',
+            'timestamp': datetime.utcnow().isoformat() + '+00:00'
+        }
+        return JsonResponse(response_data, status=200)
+    except Exception as e:
+        # Catch any unexpected errors and return 500
+        response_data = {
+            'status': 'unhealthy',
+            'timestamp': datetime.utcnow().isoformat() + '+00:00',
+            'error': str(e)
+        }
+        return JsonResponse(response_data, status=500)
+
 
 def render_error_page(message, status_code, device=None):
     """

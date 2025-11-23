@@ -141,16 +141,47 @@ WSGI_APPLICATION = 'coffee_payment.wsgi.application'
 
 # Use SQLite for testing if DB_NAME is not set
 if os.getenv('DB_NAME'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME'),
-            'USER': os.getenv('DB_USER'),
-            'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST'),
-            'PORT': os.getenv('DB_PORT'),
-        }
+    db_config = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
+    
+    # Add SSL configuration if provided
+    ssl_mode = os.getenv('POSTGRES_SSL_MODE')
+    if ssl_mode:
+        db_config['OPTIONS'] = {'sslmode': ssl_mode}
+        
+        ssl_cert = os.getenv('POSTGRES_SSL_CERT')
+        ssl_key = os.getenv('POSTGRES_SSL_KEY')
+        ssl_root_cert = os.getenv('POSTGRES_SSL_ROOT_CERT')
+        
+        if ssl_cert:
+            db_config['OPTIONS']['sslcert'] = ssl_cert
+        if ssl_key:
+            db_config['OPTIONS']['sslkey'] = ssl_key
+        if ssl_root_cert:
+            db_config['OPTIONS']['sslrootcert'] = ssl_root_cert
+        
+        # Log SSL configuration on startup
+        import logging
+        logger = logging.getLogger('django')
+        logger.info(
+            f"PostgreSQL SSL configuration enabled. Mode: {ssl_mode}, "
+            f"Cert: {'provided' if ssl_cert else 'not provided'}, "
+            f"Key: {'provided' if ssl_key else 'not provided'}, "
+            f"Root cert: {'provided' if ssl_root_cert else 'not provided'}"
+        )
+    else:
+        # Log that SSL is disabled
+        import logging
+        logger = logging.getLogger('django')
+        logger.info("PostgreSQL SSL configuration disabled (no POSTGRES_SSL_MODE set)")
+    
+    DATABASES = {'default': db_config}
 else:
     DATABASES = {
         'default': {

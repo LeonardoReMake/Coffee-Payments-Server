@@ -22,11 +22,15 @@ from payments.views import (
     yookassa_payment_result_webhook, 
     initiate_payment,
     show_order_status_page,
-    get_order_status
+    get_order_status,
+    health_check
 )
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # Health check endpoint for Kubernetes probes
+    path('health', health_check, name='health_check'),
     
     # Main payment flow endpoint - handles QR code scanning and payment scenario routing
     path('v1/pay', process_payment_flow, name='process_payment_flow'),

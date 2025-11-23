@@ -1212,6 +1212,98 @@ ORDER_EXPIRATION_MINUTES=<время протухания заказа в мин
 DEVICE_ONLINE_THRESHOLD_MINUTES=<порог онлайн-статуса устройства в минутах (по умолчанию 15)>
 ```
 
+**Полный список переменных окружения:** См. таблицу в [README.md](../../README.md#environment-variables)
+
+## Health Check Endpoint
+
+Система предоставляет легковесный HTTP endpoint для мониторинга работоспособности приложения, используемый Kubernetes для readiness и liveness проб.
+
+**Endpoint:** `/health`
+
+**Характеристики:**
+- Время ответа: < 100ms
+- Не выполняет запросов к базе данных
+- Не выполняет запросов к внешним сервисам
+- Возвращает 200 OK при нормальной работе
+- Возвращает 500 при критических ошибках
+
+**Формат ответа:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-23T10:30:00+00:00"
+}
+```
+
+**Использование в Kubernetes:**
+```yaml
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 1
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 15
+  periodSeconds: 20
+  timeoutSeconds: 1
+```
+
+## PostgreSQL SSL Configuration
+
+Для продового окружения система поддерживает SSL-соединения с PostgreSQL.
+
+**Переменные окружения:**
+- `POSTGRES_SSL_MODE` — режим SSL (disable, allow, prefer, require, verify-ca, verify-full)
+- `POSTGRES_SSL_CERT` — путь к клиентскому сертификату
+- `POSTGRES_SSL_KEY` — путь к клиентскому ключу
+- `POSTGRES_SSL_ROOT_CERT` — путь к корневому сертификату
+
+**Пример конфигурации для продового окружения:**
+```bash
+POSTGRES_SSL_MODE=require
+POSTGRES_SSL_CERT=/path/to/client-cert.pem
+POSTGRES_SSL_KEY=/path/to/client-key.pem
+POSTGRES_SSL_ROOT_CERT=/path/to/root-ca.pem
+```
+
+**Локальное окружение:**
+SSL отключен по умолчанию, если не установлена переменная `POSTGRES_SSL_MODE`.
+
+**Логирование:**
+При запуске приложения в логи записывается информация о конфигурации SSL:
+```
+PostgreSQL SSL configuration enabled. Mode: require, Cert: provided, Key: provided, Root cert: provided
+```
+
+## Database Migrations
+
+### Squashed Migrations
+
+Миграции базы данных были оптимизированы путем схлопывания (squashing) для ускорения развертывания на чистых базах данных.
+
+**Squashed Migration:** `0001_initial_squashed_0026_add_status_check_type.py`
+
+Эта миграция объединяет все миграции с 0001 по 0026 в один файл, сокращая количество операций с 74 до 49.
+
+**Применение миграций:**
+```bash
+python manage.py migrate
+```
+
+**Для существующих баз данных:**
+Старые миграции (0001-0026) остаются на месте для обратной совместимости. Новые установки будут использовать только squashed миграцию.
+
+**Проверка состояния миграций:**
+```bash
+python manage.py showmigrations
+```
+
 ## Развертывание
 
 ### Локальное развертывание
