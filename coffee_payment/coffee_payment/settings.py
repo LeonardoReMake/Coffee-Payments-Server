@@ -60,7 +60,7 @@ PAYMENT_CHECK_INTERVAL_S = 5  # How often to run the background task (seconds)
 FAST_TRACK_LIMIT_S = 300  # 5 minutes - threshold for fast vs slow track
 FAST_TRACK_INTERVAL_S = 2  # Check every 5 seconds for fast track
 SLOW_TRACK_INTERVAL_S = 60  # Check every 60 seconds for slow track
-PAYMENT_ATTEMPTS_LIMIT = 20  # Maximum check attempts before marking as failed
+PAYMENT_ATTEMPTS_LIMIT = 50  # Maximum check attempts before marking as failed
 PAYMENT_API_TIMEOUT_S = 3  # Timeout for payment provider API calls (seconds)
 
 # Celery configuration
@@ -268,57 +268,5 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-    },
-}
-
-# ============================================================================
-# Background Payment Check Configuration
-# ============================================================================
-
-# Интервал запуска фоновой проверки платежей (в секундах)
-PAYMENT_CHECK_INTERVAL_S = 10
-
-# Лимит времени для fast track (в секундах) - 5 минут
-FAST_TRACK_LIMIT_S = 300
-
-# Интервал проверки для fast track (в секундах)
-FAST_TRACK_INTERVAL_S = 5
-
-# Интервал проверки для slow track (в секундах)
-SLOW_TRACK_INTERVAL_S = 60
-
-# Максимальное количество попыток проверки платежа
-PAYMENT_ATTEMPTS_LIMIT = 10
-
-# Таймаут для запросов к платежным API (в секундах)
-PAYMENT_API_TIMEOUT_S = 3
-
-# ============================================================================
-# Celery Configuration
-# ============================================================================
-
-# Celery broker URL (Redis)
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-
-# Celery result backend (Redis)
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-
-# Celery timezone
-CELERY_TIMEZONE = 'UTC'
-
-# Celery task serializer
-CELERY_TASK_SERIALIZER = 'json'
-
-# Celery result serializer
-CELERY_RESULT_SERIALIZER = 'json'
-
-# Celery accept content
-CELERY_ACCEPT_CONTENT = ['json']
-
-# Celery Beat Schedule - периодические задачи
-CELERY_BEAT_SCHEDULE = {
-    'check-pending-payments': {
-        'task': 'payments.tasks.check_pending_payments',
-        'schedule': PAYMENT_CHECK_INTERVAL_S,  # Запускать каждые 10 секунд
     },
 }
