@@ -45,6 +45,7 @@ services:
 
   celery_worker:
     build: .
+    entrypoint: []
     command: celery -A coffee_payment worker --loglevel=info
     volumes:
       - .:/app
@@ -53,7 +54,6 @@ services:
       - redis
       - web
     environment:
-      - SKIP_MIGRATIONS=true
       - DEBUG=True
       - SECRET_KEY=klkgm3n3ktjn23kl9456n2l35
       - DB_NAME=coffee_payment
@@ -66,6 +66,7 @@ services:
 
   celery_beat:
     build: .
+    entrypoint: []
     command: celery -A coffee_payment beat --loglevel=info
     volumes:
       - .:/app
@@ -74,7 +75,6 @@ services:
       - redis
       - web
     environment:
-      - SKIP_MIGRATIONS=true
       - DEBUG=True
       - SECRET_KEY=klkgm3n3ktjn23kl9456n2l35
       - DB_NAME=coffee_payment
