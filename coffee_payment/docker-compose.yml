@@ -20,7 +20,6 @@ services:
 
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8080
     volumes:
       - .:/app
     ports:
@@ -29,6 +28,7 @@ services:
       - db
       - redis
     environment:
+      - RUN_MODE=development
       - DEBUG=True
       - SECRET_KEY=klkgm3n3ktjn23kl9456n2l35
       - DB_NAME=coffee_payment

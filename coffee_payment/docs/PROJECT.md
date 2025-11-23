@@ -1306,8 +1306,140 @@ python manage.py showmigrations
 
 ## Развертывание
 
+### Production Deployment с Gunicorn + Uvicorn
+
+Для продового окружения приложение использует **Gunicorn** в качестве менеджера процессов с **Uvicorn workers** для обработки ASGI запросов.
+
+#### Архитектура Production Server
+
+**Двухуровневая архитектура:**
+
+```
+Kubernetes Pod
+  └─> Container
+       └─> Gunicorn (Master Process)
+            ├─> UvicornWorker 1 (ASGI)
+            ├─> UvicornWorker 2 (ASGI)
+            ├─> UvicornWorker 3 (ASGI)
+            └─> UvicornWorker 4 (ASGI)
+```
+
+**Tier 1: Gunicorn (Process Manager)**
+- Управляет несколькими worker процессами
+- Балансирует нагрузку между workers
+- Мониторит здоровье workers и перезапускает упавшие
+- Обрабатывает graceful shutdown сигналы (SIGTERM, SIGINT)
+
+**Tier 2: Uvicorn Workers (ASGI Server)**
+- Каждый worker запускает Uvicorn ASGI сервер
+- Обрабатывает async Django запросы
+- Поддерживает WebSocket соединения (при необходимости)
+- Эффективная обработка конкурентных запросов
+
+#### Конфигурация через Environment Variables
+
+Все параметры Gunicorn настраиваются через переменные окружения (см. [README.md](../../README.md#environment-variables)):
+
+| Переменная | Назначение | Default |
+|-----------|-----------|---------|
+| `GUNICORN_WORKERS` | Количество worker процессов | `4` |
+| `GUNICORN_PORT` | Порт для привязки | `8000` |
+| `GUNICORN_TIMEOUT` | Таймаут запроса (секунды) | `30` |
+| `GUNICORN_MAX_REQUESTS` | Запросов до перезапуска worker | `0` (unlimited) |
+| `GUNICORN_MAX_REQUESTS_JITTER` | Случайный jitter для перезапуска | `0` |
+| `RUN_MODE` | Режим сервера: `development` или `production` | `production` |
+
+**Расчет количества workers:**
+- Default: 4 workers (подходит для большинства развертываний)
+- Рекомендуемая формула: `(2 * CPU_cores) + 1`
+- Можно настроить в зависимости от характеристик нагрузки
+
+**Конфигурация timeout:**
+- Default: 30 секунд (покрывает большинство вызовов payment API)
+- Должен быть выше самого долгого ожидаемого API вызова (Tmetr, Yookassa, TBank)
+- Kubernetes должен иметь больший termination grace period
+
+#### Graceful Shutdown
+
+Gunicorn нативно поддерживает graceful shutdown через обработку сигналов:
+
+**Процесс завершения:**
+1. Kubernetes отправляет SIGTERM в контейнер
+2. Gunicorn master процесс получает SIGTERM
+3. Gunicorn прекращает принимать новые соединения
+4. Gunicorn ждет завершения активных запросов (до timeout)
+5. Gunicorn отправляет SIGTERM всем workers
+6. Workers завершают текущие запросы и выходят
+7. Master процесс завершается
+
+**Изменения в коде не требуются:**
+- Django ASGI приложение уже поддерживает graceful shutdown
+- Gunicorn обрабатывает всё управление сигналами
+- Кастомные обработчики сигналов не нужны
+
+**Конфигурация Kubernetes:**
+```yaml
+terminationGracePeriodSeconds: 60  # Должен быть > GUNICORN_TIMEOUT
+```
+
+#### Kubernetes Deployment Considerations
+
+**Resource Limits:**
+```yaml
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "500m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+```
+
+**Health Checks:**
+- Readiness probe: `GET /health`
+- Liveness probe: `GET /health`
+- Probe frequency: каждые 10s
+- Probe timeout: 1s
+
+**Environment Configuration:**
+```yaml
+env:
+  - name: GUNICORN_WORKERS
+    value: "4"
+  - name: GUNICORN_TIMEOUT
+    value: "30"
+  - name: GUNICORN_MAX_REQUESTS
+    value: "1000"
+  - name: GUNICORN_MAX_REQUESTS_JITTER
+    value: "100"
+```
+
+#### Мониторинг
+
+**Метрики для отслеживания:**
+- Количество workers (должно соответствовать GUNICORN_WORKERS)
+- Перезапуски workers (должны быть периодическими если установлен max_requests)
+- Latency запросов (должна быть стабильной между workers)
+- Использование памяти на worker (должно быть стабильным)
+- Длительность graceful shutdown (должна быть < timeout)
+
+**Логирование:**
+- Gunicorn access logs (stdout)
+- Gunicorn error logs (stderr)
+- Django application logs (существующее логирование)
+
 ### Локальное развертывание
+
+**Development режим (с runserver):**
 ```bash
+docker-compose up -d
+```
+
+Docker Compose автоматически устанавливает `RUN_MODE=development`, что запускает Django development server вместо Gunicorn.
+
+**Production режим (с Gunicorn):**
+```bash
+# Удалить RUN_MODE из docker-compose.yml или установить RUN_MODE=production
 docker-compose up -d
 ```
 

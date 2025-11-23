@@ -21,11 +21,11 @@ RUN pip install -r requirements.txt
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# Открываем порт для приложения
-EXPOSE 8080
+# Открываем порт для приложения (по умолчанию 8000, настраивается через GUNICORN_PORT)
+EXPOSE 8000
 
 # Устанавливаем точку входа
 ENTRYPOINT ["/app/entrypoint.sh"]
 
-# Запускаем сервер Django
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8080"]
+# По умолчанию запускаем в production режиме (Gunicorn)
+# Для development режима установите ENV RUN_MODE=development

@@ -50,5 +50,12 @@ This table documents all environment variables that can be configured in the app
 | `T_BANK_BASE_URL` | TBank API base URL | `https://securepay.tinkoff.ru` |
 | **Logging** | | |
 | `LOGGING` | Django logging configuration | (configured in settings.py) |
+| **Gunicorn Production Server** | | |
+| `GUNICORN_WORKERS` | Number of Gunicorn worker processes | `4` |
+| `GUNICORN_PORT` | Port for Gunicorn to bind to | `8000` |
+| `GUNICORN_TIMEOUT` | Request timeout in seconds | `30` |
+| `GUNICORN_MAX_REQUESTS` | Requests before worker restart (0 = unlimited) | `0` |
+| `GUNICORN_MAX_REQUESTS_JITTER` | Random jitter for worker restart | `0` |
+| `RUN_MODE` | Server mode: `development` or `production` | `production` |
 
 **Note:** Variables marked with "—" have no default value and must be provided in production environments. Sensitive values (SECRET_KEY, API keys, database credentials) should be stored securely and not committed to version control.
