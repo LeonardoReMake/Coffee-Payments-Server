@@ -21,9 +21,6 @@ RUN pip install -r requirements.txt
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# Создаем директорию для логов
-RUN mkdir -p /app/logs
-
 # Открываем порт для приложения (настраивается через GUNICORN_PORT)
 # По умолчанию 8000, но в docker-compose используется 8080
 EXPOSE 8000 8080

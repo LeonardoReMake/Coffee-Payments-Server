@@ -50,7 +50,7 @@ This table documents all environment variables that can be configured in the app
 | `SHOP_ID` | TBank shop ID | `<ShopID>` |
 | `T_BANK_BASE_URL` | TBank API base URL | `https://securepay.tinkoff.ru` |
 | **Logging** | | |
-| `LOGGING` | Django logging configuration | (configured in settings.py) |
+| `LOG_LEVEL` | Logging level for the entire application (DEBUG, INFO, WARNING, ERROR, CRITICAL) | `INFO` |
 | **Gunicorn Production Server** | | |
 | `GUNICORN_WORKERS` | Number of Gunicorn worker processes | `4` |
 | `GUNICORN_PORT` | Port for Gunicorn to bind to | `8000` |
@@ -60,3 +60,23 @@ This table documents all environment variables that can be configured in the app
 | `RUN_MODE` | Server mode: `development` or `production` | `production` |
 
 **Note:** Variables marked with "—" have no default value and must be provided in production environments. Sensitive values (SECRET_KEY, API keys, database credentials) should be stored securely and not committed to version control.
+
+### LOG_LEVEL
+
+Controls the logging level for the entire application (Django, Celery, and all custom loggers).
+
+**Possible values:**
+- `DEBUG` - All logs including debug messages
+- `INFO` - Informational logs and above (default)
+- `WARNING` - Warnings and errors only
+- `ERROR` - Errors and critical messages only
+- `CRITICAL` - Critical messages only
+
+**Default:** `INFO`
+
+**Example:**
+```bash
+export LOG_LEVEL=DEBUG
+```
+
+All logs are output in JSON format to stdout (for INFO, DEBUG, WARNING) and stderr (for ERROR, CRITICAL) for compatibility with Kubernetes log aggregation systems.

@@ -84,12 +84,39 @@ curl http://localhost:8080/health
 2. Проверьте переменные подключения: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 3. Проверьте логи БД: `docker-compose logs db`
 
+## Конфигурация логирования
+
+Приложение выводит все логи в stdout/stderr в JSON формате.
+
+**Переменная окружения:**
+- `LOG_LEVEL` - Управляет детализацией логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- По умолчанию: INFO
+
+**Конфигурация Kubernetes:**
+- Логи автоматически собираются Kubernetes
+- Настройте систему лог-агрегации (Loki, ELK, CloudWatch) для парсинга JSON логов
+- Установите политики хранения логов в системе лог-агрегации
+
+**Мониторинг:**
+- Используйте систему лог-агрегации для поиска и анализа логов
+- Настройте алерты на основе уровней ERROR и CRITICAL
+- Мониторьте объем и производительность логов
+
+**Пример установки LOG_LEVEL:**
+```bash
+# В .env.production
+LOG_LEVEL=INFO
+
+# Для отладки
+LOG_LEVEL=DEBUG
+```
+
 ## Мониторинг
 
 ### Логи приложения
 
 ```bash
-# Все логи
+# Все логи (в JSON формате)
 docker-compose logs -f
 
 # Только web
@@ -97,6 +124,12 @@ docker-compose logs -f web
 
 # Только Celery
 docker-compose logs -f celery_worker celery_beat
+```
+
+**Формат логов:**
+Все логи выводятся в JSON формате для удобного парсинга:
+```json
+{"timestamp": "2025-11-24T10:30:00+00:00", "tag": "django.request", "level": "INFO", "message": "GET /v1/pay HTTP/1.1 200"}
 ```
 
 ### Метрики Gunicorn
