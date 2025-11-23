@@ -484,6 +484,28 @@ def initiate_payment(request):
     # Get device and prepare drink_details for payment scenario
     device = order.device
     
+    # Set status_check_type from MerchantCredentials if not already set
+    if not order.status_check_type:
+        merchant = order.merchant
+        credentials = merchant.credentials.filter(scenario=device.payment_scenario).first()
+        
+        if credentials and hasattr(credentials, 'status_check_type'):
+            order.status_check_type = credentials.status_check_type
+            log_info(
+                f"Set status_check_type='{order.status_check_type}' for Order {order.id} "
+                f"from MerchantCredentials (scenario={device.payment_scenario})",
+                'initiate_payment'
+            )
+        else:
+            order.status_check_type = 'polling'
+            log_info(
+                f"Set default status_check_type='polling' for Order {order.id} "
+                f"(credentials not found or missing field for scenario={device.payment_scenario})",
+                'initiate_payment'
+            )
+        
+        order.save()
+    
     # Reconstruct drink_details from order data
     # This is needed for PaymentScenarioService.execute_scenario
     drink_details = {

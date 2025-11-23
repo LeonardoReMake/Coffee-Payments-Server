@@ -4,10 +4,27 @@ from .models import Order, Drink, Device, User, Payment, Receipt, Merchant, Merc
 
 @admin.register(MerchantCredentials)
 class MerchantCredentialsAdmin(admin.ModelAdmin):
-    list_display = ('merchant', 'scenario', 'created_at', 'updated_at')
-    list_filter = ('scenario', 'created_at')
+    list_display = ('merchant', 'scenario', 'status_check_type', 'created_at', 'updated_at')
+    list_filter = ('scenario', 'status_check_type', 'created_at')
     search_fields = ('merchant__name', 'scenario')
     readonly_fields = ('id', 'created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Merchant Information', {
+            'fields': ('merchant', 'scenario')
+        }),
+        ('Credentials', {
+            'fields': ('credentials',),
+            'description': 'Credentials in JSON format. Example for Yookassa: {"account_id": "...", "secret_key": "..."}'
+        }),
+        ('Payment Status Check Configuration', {
+            'fields': ('status_check_type',),
+            'description': 'Type of payment status check: polling (background check), webhook (notification from payment provider), or none (no automatic check)'
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
 
 
 @admin.register(Device)
@@ -88,7 +105,31 @@ class ReceiptAdmin(admin.ModelAdmin):
     )
 
 
-admin.site.register(Order)
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('id', 'drink_name', 'status', 'status_check_type', 'price', 'created_at')
+    list_filter = ('status', 'status_check_type', 'created_at')
+    search_fields = ('id', 'drink_name', 'device__device_uuid', 'merchant__name')
+    readonly_fields = ('id', 'status_check_type', 'payment_reference_id', 'created_at', 'updated_at', 'expires_at', 'payment_started_at', 'next_check_at', 'last_check_at', 'check_attempts')
+    
+    fieldsets = (
+        ('Order Information', {
+            'fields': ('id', 'device', 'merchant', 'drink_name', 'drink_number', 'size', 'price', 'status')
+        }),
+        ('Payment Information', {
+            'fields': ('payment_reference_id', 'status_check_type'),
+            'description': 'status_check_type is fixed at payment initiation time and cannot be changed'
+        }),
+        ('Background Check Tracking', {
+            'fields': ('payment_started_at', 'next_check_at', 'last_check_at', 'check_attempts', 'failed_presentation_desc'),
+            'description': 'Fields used for background payment status checking'
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at', 'expires_at')
+        }),
+    )
+
+
 admin.site.register(User)
 admin.site.register(Payment)
 admin.site.register(Merchant)

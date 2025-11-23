@@ -191,6 +191,17 @@ class Order(models.Model):
         blank=True,
         help_text='User-friendly description of failure reason'
     )
+    status_check_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('polling', 'Polling'),
+            ('webhook', 'Webhook'),
+            ('none', 'None')
+        ],
+        null=True,
+        blank=True,
+        help_text='Type of payment status check for this order (fixed at creation time)'
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -304,6 +315,16 @@ class MerchantCredentials(models.Model):
     scenario = models.CharField(max_length=50)
     credentials = models.JSONField(
         help_text='Credentials in JSON format. Example for Yookassa: {"account_id": "...", "secret_key": "..."}'
+    )
+    status_check_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('polling', 'Polling'),
+            ('webhook', 'Webhook'),
+            ('none', 'None')
+        ],
+        default='polling',
+        help_text='Type of payment status check: polling (background check), webhook (notification from payment provider), or none (no automatic check)'
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

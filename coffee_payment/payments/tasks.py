@@ -22,15 +22,17 @@ def check_pending_payments():
     now = timezone.now()
     
     # Query pending orders that need checking
+    # Only process orders with status_check_type='polling'
     orders = Order.objects.filter(
         status='pending',
+        status_check_type='polling',
         next_check_at__lte=now,
         next_check_at__isnull=False,
         expires_at__gt=now
     ).select_related('device', 'merchant').order_by('-payment_started_at')
     
     order_count = orders.count()
-    logger.info(f"Found {order_count} pending orders to check")
+    logger.info(f"Found {order_count} pending orders to check (status_check_type='polling')")
     
     for order in orders:
         logger.info(f"Processing order {order.id}")
