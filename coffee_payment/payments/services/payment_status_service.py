@@ -59,7 +59,7 @@ class PaymentStatusService:
             # Configure Yookassa
             Configuration.account_id = credentials.credentials['account_id']
             Configuration.secret_key = credentials.credentials['secret_key']
-            Configuration.secret_key = settings.PAYMENT_API_TIMEOUT_S
+            Configuration.timeout = settings.PAYMENT_API_TIMEOUT_S
             
             # Query Yookassa API with timeout
             logger.info(f"Order {order.id}: Querying Yookassa API for payment {order.payment_reference_id}")
