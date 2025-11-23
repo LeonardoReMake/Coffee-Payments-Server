@@ -23,7 +23,11 @@ class Merchant(models.Model):
 class Device(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     device_uuid = models.CharField(max_length=255, unique=True)  # UUID, задаваемый кофемашиной
-    redirect_url = models.URLField(null=True, blank=True)  # Новое поле: URL для перенаправления (необязательное)
+    redirect_url = models.URLField(
+        null=True, 
+        blank=True,
+        help_text='Only for Custom scenario. Redirects to this url after successfully created order'
+    )  # Новое поле: URL для перенаправления (необязательное)
     merchant = models.ForeignKey(
         Merchant, on_delete=models.CASCADE, related_name="devices"
     )  # Связь с Merchant

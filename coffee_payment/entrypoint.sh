@@ -17,6 +17,12 @@ else
     echo "Skipping migrations (SKIP_MIGRATIONS=true)"
 fi
 
+# Собираем статические файлы для production
+if [ "$RUN_MODE" != "development" ]; then
+    echo "Collecting static files..."
+    python manage.py collectstatic --noinput
+fi
+
 # Проверяем режим запуска
 if [ "$RUN_MODE" = "development" ]; then
     echo "Starting in development mode..."
