@@ -21,6 +21,9 @@ RUN pip install -r requirements.txt
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
+# Создаем директорию для логов
+RUN mkdir -p /app/logs
+
 # Открываем порт для приложения (по умолчанию 8000, настраивается через GUNICORN_PORT)
 EXPOSE 8000
 

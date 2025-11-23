@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Создаем директорию для логов, если она не существует
+mkdir -p /app/logs
+
 # Применяем миграции
 python manage.py migrate
 
