@@ -22,8 +22,10 @@ fi
 
 # Проверяем режим запуска
 if [ "$RUN_MODE" = "development" ]; then
-    echo "Starting in development mode..."
-    exec python manage.py runserver 0.0.0.0:8000
+    # Используем GUNICORN_PORT для единообразия портов
+    PORT=${GUNICORN_PORT:-8000}
+    echo "Starting in development mode on port $PORT..."
+    exec python manage.py runserver 0.0.0.0:$PORT
 else
     echo "Starting in production mode with Gunicorn..."
     exec gunicorn -c gunicorn.conf.py coffee_payment.asgi:application
