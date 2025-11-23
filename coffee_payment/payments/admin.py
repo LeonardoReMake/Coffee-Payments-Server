@@ -32,7 +32,7 @@ class DeviceAdmin(admin.ModelAdmin):
     list_display = ('device_uuid', 'location', 'status', 'payment_scenario', 'merchant')
     list_filter = ('status', 'payment_scenario')
     search_fields = ('device_uuid', 'location', 'merchant__name')
-    readonly_fields = ('uuid', 'last_interaction')
+    readonly_fields = ('uuid')
     
     fieldsets = (
         ('Device Information', {
