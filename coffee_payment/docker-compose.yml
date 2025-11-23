@@ -29,6 +29,7 @@ services:
       - redis
     environment:
       - RUN_MODE=development
+      - GUNICORN_PORT=8080
       - DEBUG=True
       - SECRET_KEY=klkgm3n3ktjn23kl9456n2l35
       - DB_NAME=coffee_payment

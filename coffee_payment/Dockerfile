@@ -24,8 +24,9 @@ RUN chmod +x /app/entrypoint.sh
 # Создаем директорию для логов
 RUN mkdir -p /app/logs
 
-# Открываем порт для приложения (по умолчанию 8000, настраивается через GUNICORN_PORT)
-EXPOSE 8000
+# Открываем порт для приложения (настраивается через GUNICORN_PORT)
+# По умолчанию 8000, но в docker-compose используется 8080
+EXPOSE 8000 8080
 
 # Устанавливаем точку входа
 ENTRYPOINT ["/app/entrypoint.sh"]

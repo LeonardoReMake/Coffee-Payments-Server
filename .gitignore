@@ -1,6 +1,12 @@
 .DS_Store
 .vscode
 
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+
 # Logs
 logs/
 *.log
