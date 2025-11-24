@@ -259,7 +259,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'json': {
-            'format': '{"timestamp": "%(asctime)s", "tag": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}',
+            '()': 'coffee_payment.json_formatter.JSONFormatter',
         },
     },
     'handlers': {
