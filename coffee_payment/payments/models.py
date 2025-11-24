@@ -8,6 +8,17 @@ class Merchant(models.Model):
     contact_email = models.EmailField()
     bank_account = models.CharField(max_length=255)
     valid_until = models.DateField()  # Новое поле: дата окончания действия услуг
+    client_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text='Client ID in TMetr system (UUID format)'
+    )
+    comment = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Additional comments about the client'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -38,7 +49,7 @@ class Device(models.Model):
         ('error', 'Error'),
         ('test', 'Test')
     ])
-    last_interaction = models.DateTimeField()
+    last_interaction = models.DateTimeField(auto_now_add=True)
     payment_scenario = models.CharField(
         max_length=50,
         default='Yookassa',
@@ -156,7 +167,11 @@ class Order(models.Model):
         Merchant, on_delete=models.CASCADE, related_name="orders"
     )  # Связь с Merchant
     size = models.IntegerField(choices=[(1, 'Small'), (2, 'Medium'), (3, 'Large')])
-    price = models.DecimalField(max_digits=10, decimal_places=2) # в копейках
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=0,
+        help_text='Price in kopecks (no decimal part)'
+    )
     status = models.CharField(max_length=50, choices=[
         ('created', 'Created'),
         ('pending', 'Pending'),
@@ -337,6 +352,16 @@ class MerchantCredentials(models.Model):
         unique_together = ('merchant', 'scenario')
         verbose_name = 'Merchant Credentials'
         verbose_name_plural = 'Merchant Credentials'
+    
+    def clean(self):
+        from django.conf import settings
+        from django.core.exceptions import ValidationError
+        
+        available_scenarios = getattr(settings, 'PAYMENT_SCENARIOS', ['Yookassa'])
+        if self.scenario not in available_scenarios:
+            raise ValidationError(
+                f'Invalid payment scenario. Must be one of: {", ".join(available_scenarios)}'
+            )
     
     def __str__(self):
         return f"{self.merchant.name} - {self.scenario}"
